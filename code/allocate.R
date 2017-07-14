@@ -22,16 +22,13 @@ cell_ix = which(!is.na(getValues(india_rgn)))
 n_cell = length(cell_ix)
 
 ## global cropland map
-crop_area_2005 =
-    raster("data/rawdata/iiasa-ifpri-cropland-map/Hybrid_10042015v9.img") %>%
-    crop(india_ext) %>%
-    raster::aggregate(fact=10, FUN=mean) %>%
-    `/`(100) 
+crop_area_2005 = raster("data/iiasa-ifpri-cropland-map/iiasa_ifpri_cropland_map_5m.tif")
 
 ## load data
 area_df       = readRDS("data/mapspam_crop_area_df.rds")
 yield_df      = readRDS("data/mapspam_crop_yield_df.rds")
-suit_df       = readRDS("data/neighb_crop_suit_df.rds")
+nb_df         = readRDS("data/crop_neighb_df.rds")
+suit_df       = readRDS("data/crop_suit_df.rds")
 dmd           = readRDS("data/gcam_reference_demand.rds")
 
 ## study region characteristics
@@ -46,6 +43,8 @@ time = seq(2005, 2100, by=5)
 ## initial matrices
 init_area_mat =
     area_df %>%
+    filter(!input %in% c("rain_h","rain_l","rain_s","total")) %>%
+    arrange(cell,season,input) %>%
     select(-(cell:input)) %>%
     mutate_each(funs(replace(., is.na(.), 0))) %>%
     as.matrix
@@ -56,18 +55,22 @@ init_total_area_mat =
 
 init_yield_mat =
     yield_df %>%
+    filter(!input %in% c("rain_h","rain_l","rain_s","total")) %>%
+    arrange(cell,season,input) %>%
     select(-(cell:input)) %>%
     mutate_each(funs(replace(., is.na(.), 0))) %>%
     as.matrix
 
 init_suit_mat =
-    suit_df %>%
+    nb_df %>%
+    filter(!input %in% c("rain_h","rain_l","rain_s","total")) %>%
+    arrange(cell,season,input) %>%
     select(-(cell:input)) %>%
     mutate_each(funs(replace(., is.na(.), 0))) %>%
     as.matrix
 
-## ultimately, all maps will be projected in an equal area projection and hence
-## cell_area will be a single value
+## ultimately, all maps will be projected in an equal area projection
+## and hence cell_area will be a single value
 cell_area = getValues(area(india_rgn) * 100) %>% `[`(cell_ix)
 
 ## model parameters
@@ -85,6 +88,7 @@ suit_mat = init_suit_mat
 
 ## for (i in 2:length(time)) {
 for (i in 2:3) {    
+
     ## check dimensions etc.
     if (!isTRUE(all.equal(colnames(dmd), colnames(area_mat), colnames(total_area_mat), colnames(yield_mat)))) {
         stop()
@@ -95,10 +99,11 @@ for (i in 2:3) {
     }
 
     ## TODO: run land use change model here to get cropland area
+
     cropland_area = getValues(crop_area_2005 * area(crop_area_2005) * 100) %>% `[`(cell_ix)
    
-    ## calculate demand (the amount by which production must change, rather than
-    ## total production)
+    ## calculate demand (the amount by which production must change,
+    ## rather than total production)
     dmd0 = dmd[i-1,]      
     dmd1 = dmd[i,] - dmd0
 

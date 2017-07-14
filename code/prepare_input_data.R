@@ -1435,7 +1435,8 @@ yield_df =
     kharif_yield_df %>%
     full_join(rabi_yield_df) %>%
     full_join(annual_yield_df) %>%
-    select(cell, season, input, acof, bana, barl, bean, cass, chic, cnut, coco, cott, cowp, grou, lent, maiz, ocer, ofib, oilp, ooil, opul, orts, pige, plnt, pmil, pota, rape, rcof, rest, rice, sesa, smil, sorg, soyb, sugb, sugc, sunf, swpo, teas, temf, toba, trof, vege, whea, yams) %>% 
+    select(cell, season, input, acof, bana, barl, bean, cass, chic, cnut, coco, cott, cowp, grou, lent, maiz, ocer, ofib, oilp, ooil, opul, orts, pige, plnt, pmil, pota, rape, rcof, rest, rice, sesa, smil, sorg, soyb, sugb, sugc, sunf, swpo, teas, temf, toba, trof, vege, whea, yams) %>%
+    mutate_each(funs(./1e3), -(cell:input)) %>% ## kg -> ton
     arrange(cell, season, input)
 
 ## save object
@@ -1509,8 +1510,6 @@ suit_df =
 ## save object
 saveRDS(nb_df, "data/crop_neighb_df.rds")
 saveRDS(suit_df, "data/crop_suit_df.rds")
-
-stop()
 
 ## ======================================
 ## process GCAM output
