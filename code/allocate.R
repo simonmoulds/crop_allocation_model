@@ -129,6 +129,8 @@ for (i in 2:3) {
                            n_season,       ## n_season
                            n_input,        ## n_input
                            fact,           ## fact
+                           0,              ## rand_min
+                           0,              ## rand_max
                            1000,           ## tol
                            1000000)        ## maxiter
 
@@ -157,6 +159,8 @@ for (i in 2:3) {
                            n_season,       ## n_season
                            n_input,        ## n_input
                            fact,           ## fact
+                           0,              ## rand_min
+                           0,              ## rand_max
                            1000,           ## tol
                            1000000)        ## maxiter
 
@@ -197,11 +201,14 @@ for (i in 2:3) {
     }
 }
 
-cppFunction(code='NumericMatrix addmat(NumericMatrix x, NumericMatrix y) {
-  return x + y;
-}')
+## cppFunction(code='NumericVector runifC(int n, double min, double max) {
+##   return runif(n, min, max);
+## }')
+## cppFunction(code='NumericMatrix addmat(NumericMatrix x, NumericMatrix y) {
+##   return x + y;
+## }')
 
-library(RcppArmadillo)
-cppFunction("arma::mat schur(arma::mat& a, arma::mat& b) {
-  return(a % b);
-}", depends="RcppArmadillo")
+## library(RcppArmadillo)
+## cppFunction("arma::mat schur(arma::mat& a, arma::mat& b) {
+##   return(a % b);
+## }", depends="RcppArmadillo")
