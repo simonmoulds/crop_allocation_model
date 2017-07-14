@@ -15,13 +15,20 @@ options(stringsAsFactors = FALSE)
 ## (http://geo-wiki.org/downloads/)
 ## ======================================
 
-lulc_path = "data/iiasa-ifpri-cropland-map_data"
+lulc_path = "data/iiasa-ifpri-cropland-map"
+if (!dir.exists(lulc_path)) {
+    dir.create(lulc_path)
+}
+
 crop_area_2005 =
     raster("data/rawdata/iiasa-ifpri-cropland-map/Hybrid_10042015v9.img") %>%
     raster::aggregate(fact=10, FUN=mean) %>%
     `/`(100)
 
-writeRaster(crop_area_2005, lulc_path, format="GTiff", overwrite=TRUE)
+writeRaster(crop_area_2005,
+            file.path(lulc_path, "iiasa_ifpri_cropland_map_5m.tif"),
+            format="GTiff",
+            overwrite=TRUE)
 
 ## ======================================
 ## MapSPAM
@@ -74,45 +81,56 @@ r[r == 0] = NA
 ## described here -
 ## http://rspatial.org/analysis/rst/4-interpolation.html
 
-fs = list.files(file.path("data", "mapspam_data"), pattern="SPAM2005V3r1_global_A_TA_[A-Z]{4}_A.tif$", full.names=TRUE)
+## TODO: uncomment!
+## fs = list.files(file.path("data", "mapspam_data"), pattern="SPAM2005V3r1_global_A_TA_[A-Z]{4}_A.tif$", full.names=TRUE)
 
-x = raster(fs[1])
-x[] = 0
+## x = raster(fs[1])
+## x[] = 0
 
-for (f in fs) {
-    x = stackApply(stack(x, raster(f)), indices=c(1,1), fun=sum)
-}
+## for (f in fs) {
+##     x = stackApply(stack(x, raster(f)), indices=c(1,1), fun=sum)
+## }
 
-r = crop(r, x)
-x[x > 0] = 1
-x[r > 0] = 1
-x[x < 1] = NA 
+## r = crop(r, x)
+## x[x > 0] = 1
+## x[r > 0] = 1
+## x[x < 1] = NA 
 
-nn = function(x, y, ...) {
-    xx = raster(x)
-    xx[is.na(x) & !is.na(y)] = 1
-    pp = rasterToPoints(xx)[,1:2]
+## nn = function(x, y, ...) {
+##     xx = raster(x)
+##     xx[is.na(x) & !is.na(y)] = 1
+##     pp = rasterToPoints(xx)[,1:2]
 
-    p = rasterToPoints(x)[,1:2]
-    nn = n2dist(p,pp)
+##     p = rasterToPoints(x)[,1:2]
+##     nn = n2dist(p,pp)
 
-    ix = nn$neighs
-    vals = rasterToPoints(x)[ix,3]
+##     ix = nn$neighs
+##     vals = rasterToPoints(x)[ix,3]
 
-    pp = as.data.frame(pp)
-    coordinates(pp) = ~x+y
-    cells = cellFromXY(x, pp)
-    x[cells] = vals
-    x
-}
+##     pp = as.data.frame(pp)
+##     coordinates(pp) = ~x+y
+##     cells = cellFromXY(x, pp)
+##     x[cells] = vals
+##     x
+## }
 
-r = nn(r, x)
+## r = nn(r, x)
 
-out = template
-xy = as(r, "SpatialPoints")
-out[xy] = r[xy]
+## out = template
+## xy = as(r, "SpatialPoints")
+## out[xy] = r[xy]
 
-writeRaster(out, filename="data/gcam_32rgn_rast_ll.tif", format="GTiff", overwrite=TRUE)
+## writeRaster(out, filename="data/gcam_32rgn_rast_ll.tif", format="GTiff", overwrite=TRUE)
+
+
+
+
+
+
+
+
+
+
 
 ## ## india_poly = readOGR(dsn="data", layer="gcam_32rgn")
 ## india_rgn = raster("data/gcam_32rgn_rast_ll.tif")
