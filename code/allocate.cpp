@@ -513,6 +513,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
   Rprintf("%d\n", counter);
 
   NumericMatrix total_crop_area_new = get_total_areaC(crop_area, n_season, n_input);
+
   return List::create(Named("demand") = demand, _["area"] = crop_area, _["total_area"] = total_crop_area_new);  
 }
 

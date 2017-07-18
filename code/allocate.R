@@ -38,11 +38,15 @@ yield_df      =
     filter(!input %in% c("rain_h","rain_l","rain_s","total"))
     
 ## suit_df       = readRDS("data/neighb_crop_suit_df_orig.rds")
-suit_df       =
+nb_df         =
     readRDS("data/crop_neighb_df.rds") %>%
     filter(!input %in% c("rain_h","rain_l","rain_s","total"))
+
+suit_df       =
+    readRDS("data/crop_suit_df.rds") %>%
+    filter(!input %in% c("rain_h","rain_l","rain_s","total"))
     
-dmd           = readRDS("data/gcam_reference_demand_orig.rds")
+dmd           = readRDS("data/gcam_reference_demand.rds")
 
 ## study region characteristics
 n_input = 2
@@ -70,11 +74,21 @@ init_yield_mat =
     mutate_each(funs(replace(., is.na(.), 0))) %>%
     as.matrix
 
+init_nb_mat =
+    nb_df %>%
+    select(-(cell:input)) %>%
+    mutate_each(funs(replace(., is.na(.), 0))) %>%
+    as.matrix
+
 init_suit_mat =
     suit_df %>%
     select(-(cell:input)) %>%
     mutate_each(funs(replace(., is.na(.), 0))) %>%
     as.matrix
+
+## total suitability is the maximum of biophysical suitability from
+## GAEZ and neighbourhood suitability
+init_tsuit_mat = pmax(init_nb_mat, init_suit_mat)
 
 ## ultimately, all maps will be projected in an equal area projection and hence
 ## cell_area will be a single value
@@ -82,7 +96,9 @@ cell_area = getValues(area(india_rgn) * 100) %>% `[`(cell_ix)
 
 ## model parameters
 alloc_order = c("rice","whea")
-fact = 0.01   ## this value controls how much change is made in each cell
+fact = 0.01 ## this value controls how much change is made in each cell
+rand_min = 0
+rand_max = 0.25
 
 ## specify output directory
 out_path = "data"
@@ -91,10 +107,10 @@ out_path = "data"
 area_mat = init_area_mat
 total_area_mat = init_total_area_mat
 yield_mat = init_yield_mat
-suit_mat = init_suit_mat
+suit_mat = init_tsuit_mat
 
 ## for (i in 2:length(time)) {
-for (i in 2:3) {    
+for (i in 2:4) {    
     ## check dimensions etc.
     if (!isTRUE(all.equal(colnames(dmd), colnames(area_mat), colnames(total_area_mat), colnames(yield_mat)))) {
         stop()
@@ -139,8 +155,8 @@ for (i in 2:3) {
                            n_season,       ## n_season
                            n_input,        ## n_input
                            fact,           ## fact
-                           0,
-                           0,
+                           rand_min,       ## rand_min
+                           rand_max,       ## rand_max
                            1000,           ## tol
                            1000000)        ## maxiter
 
@@ -169,8 +185,8 @@ for (i in 2:3) {
                            n_season,       ## n_season
                            n_input,        ## n_input
                            fact,           ## fact
-                           0,
-                           0,
+                           rand_min,       ## rand_min
+                           rand_max,       ## rand_max
                            1000,           ## tol
                            1000000)        ## maxiter
 
