@@ -26,14 +26,14 @@ cell_area = area(india_rgn) * 1000 * 1000 / 10000 ## km2 -> Ha
 ## ======================================
 
 crop_area_2005 =
-    raster("data/iiasa-ifpri-cropland-map/iiasa_ifpri_cropland_map_5m.tif") %>%
+    raster("data/iiasa-ifpri-cropland-map/iiasa_ifpri_cropland_map_5m_ll.tif") %>%
     crop(india_ext)
 
 ## ======================================
 ## helper functions
 ## ======================================
 
-get_mapspam_data = function(crop, path, what, ...) {
+get_mapspam_data = function(crop, path, what, suffix="", ...) {
     ## function to load MapSPAM data
 
     what = tolower(what)
@@ -46,33 +46,31 @@ get_mapspam_data = function(crop, path, what, ...) {
     }
     
     out =
-        list(total=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TA_", toupper(crop), "_A.tif"))),
-             irri=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TI_", toupper(crop), "_I.tif"))),
-             rain=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TR_", toupper(crop), "_R.tif"))),
-             rain_h=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TH_", toupper(crop), "_H.tif"))),
-             rain_l=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TL_", toupper(crop), "_L.tif"))),
-             rain_s=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TS_", toupper(crop), "_S.tif"))))
+        list(total=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TA_", toupper(crop), "_A", suffix, ".tif"))),
+             irri=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TI_", toupper(crop), "_I", suffix, ".tif"))),
+             rain=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TR_", toupper(crop), "_R", suffix, ".tif"))),
+             rain_h=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TH_", toupper(crop), "_H", suffix, ".tif"))),
+             rain_l=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TL_", toupper(crop), "_L", suffix, ".tif"))),
+             rain_s=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TS_", toupper(crop), "_S", suffix, ".tif"))))
     out
 }
 
-get_gaez_suit_data = function(crop, path, ...) {
+get_gaez_suit_data = function(crop, path, suffix="_ll", ...) {
 
-    input_levels = c("hsuhi", ## high input, irrigated
-                     "isuii", ## intermediate input, irrigated
-                     "hsuhr", ## high input, rainfed
-                     "isuir", ## intermediate input, rainfed
-                     "lsulr") ## low input, rainfed
+    input_levels = c("h_suhi", ## high input, irrigated
+                     "i_suii", ## intermediate input, irrigated
+                     "h_suhr", ## high input, rainfed
+                     "i_suir", ## intermediate input, rainfed
+                     "l_sulr") ## low input, rainfed
     out = list()
     count = 0
-    for (level in input_levels) {
-        dir = paste0("res03crav6190", level, crop, "_package") 
-        if (dir.exists(file.path(path, dir))) {
-            f = gsub("(.{5})(.{9})(.{4})(.{3})(.*)$", "\\1_\\2_\\3_\\4.tif", dir)
-            if (file.exists(file.path(path, dir, f))) {
-                count = count + 1
-                r = raster(file.path(path, dir, f))
-                out[[level]] = r
-            }
+    for (i in 1:length(input_levels)) {
+        level = input_levels[i]
+        f = paste0("res03_crav6190", level, "_", crop, suffix, ".tif")
+        if (file.exists(file.path(path, f))) {
+            count = count + 1
+            r = raster(file.path(path, f))
+            out[[level]] = r
         }
     }
     if (count == 0) {
@@ -118,9 +116,9 @@ rice_yield =
     get_mapspam_data("rice", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-rice_prod =
-    get_mapspam_data("rice", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## rice_prod =
+##     get_mapspam_data("rice", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 rice_suit_w = get_gaez_suit_data("rcw", gaez_path)
 rice_suit_d = get_gaez_suit_data("rcd", gaez_path)
@@ -156,9 +154,9 @@ barl_yield =
     get_mapspam_data("barl", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-barl_prod =
-    get_mapspam_data("barl", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## barl_prod =
+##     get_mapspam_data("barl", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 barl_suit =
     get_gaez_suit_data("brl", gaez_path) %>%
@@ -185,9 +183,9 @@ maiz_yield =
     get_mapspam_data("maiz", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-maiz_prod =
-    get_mapspam_data("maiz", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## maiz_prod =
+##     get_mapspam_data("maiz", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 maiz_suit =
     get_gaez_suit_data("mze", gaez_path) %>%
@@ -214,9 +212,9 @@ pmil_yield =
     get_mapspam_data("pmil", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-pmil_prod =
-    get_mapspam_data("pmil", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## pmil_prod =
+##     get_mapspam_data("pmil", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 pmil_suit =
     get_gaez_suit_data("pml", gaez_path) %>%
@@ -242,9 +240,9 @@ smil_yield =
     get_mapspam_data("smil", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-smil_prod =
-    get_mapspam_data("smil", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## smil_prod =
+##     get_mapspam_data("smil", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 smil_suit =
     get_gaez_suit_data("fml", gaez_path) %>%
@@ -270,9 +268,9 @@ sorg_yield =
     get_mapspam_data("sorg", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-sorg_prod =
-    get_mapspam_data("sorg", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## sorg_prod =
+##     get_mapspam_data("sorg", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 sorg_suit =
     get_gaez_suit_data("srg", gaez_path) %>%
@@ -298,9 +296,9 @@ ocer_yield =
     get_mapspam_data("ocer", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-ocer_prod =
-    get_mapspam_data("ocer", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## ocer_prod =
+##     get_mapspam_data("ocer", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB suitability based on oat
 ocer_suit =
@@ -327,9 +325,9 @@ soyb_yield =
     get_mapspam_data("soyb", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-soyb_prod =
-    get_mapspam_data("soyb", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## soyb_prod =
+##     get_mapspam_data("soyb", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 soyb_suit =
     get_gaez_suit_data("soy", gaez_path) %>%
@@ -356,9 +354,9 @@ grou_yield =
     get_mapspam_data("grou", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-grou_prod =
-    get_mapspam_data("grou", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## grou_prod =
+##     get_mapspam_data("grou", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 grou_suit =
     get_gaez_suit_data("grd", gaez_path) %>%
@@ -385,9 +383,9 @@ sesa_yield =
     get_mapspam_data("sesa", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-sesa_prod =
-    get_mapspam_data("sesa", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## sesa_prod =
+##     get_mapspam_data("sesa", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB: suitability based on rapeseed
 sesa_suit =
@@ -414,9 +412,9 @@ sunf_yield =
     get_mapspam_data("sunf", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-sunf_prod =
-    get_mapspam_data("sunf", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## sunf_prod =
+##     get_mapspam_data("sunf", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 sunf_suit =
     get_gaez_suit_data("sfl", gaez_path) %>%
@@ -442,9 +440,9 @@ ooil_yield =
     get_mapspam_data("ooil", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-ooil_prod =
-    get_mapspam_data("ooil", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## ooil_prod =
+##     get_mapspam_data("ooil", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB other oil suitability based on olive oil
 ooil_suit =
@@ -471,9 +469,9 @@ pota_yield =
     get_mapspam_data("pota", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-pota_prod =
-    get_mapspam_data("pota", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## pota_prod =
+##     get_mapspam_data("pota", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 pota_suit =
     get_gaez_suit_data("wpo", gaez_path) %>%
@@ -499,9 +497,9 @@ swpo_yield =
     get_mapspam_data("swpo", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-swpo_prod =
-    get_mapspam_data("swpo", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## swpo_prod =
+##     get_mapspam_data("swpo", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 swpo_suit =
     get_gaez_suit_data("spo", gaez_path) %>%
@@ -527,9 +525,9 @@ cott_yield =
     get_mapspam_data("cott", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-cott_prod =
-    get_mapspam_data("cott", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## cott_prod =
+##     get_mapspam_data("cott", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 cott_suit =
     get_gaez_suit_data("cot", gaez_path) %>%
@@ -555,9 +553,9 @@ ofib_yield =
     get_mapspam_data("ofib", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-ofib_prod =
-    get_mapspam_data("ofib", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## ofib_prod =
+##     get_mapspam_data("ofib", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ofib_suit =
     get_gaez_suit_data("flx", gaez_path) %>%
@@ -583,9 +581,9 @@ toba_yield =
     get_mapspam_data("toba", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-toba_prod =
-    get_mapspam_data("toba", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## toba_prod =
+##     get_mapspam_data("toba", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 toba_suit =
     get_gaez_suit_data("tob", gaez_path) %>%
@@ -611,9 +609,9 @@ rest_yield =
     get_mapspam_data("rest", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-rest_prod =
-    get_mapspam_data("rest", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## rest_prod =
+##     get_mapspam_data("rest", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 rest_suit =
     get_gaez_suit_data("mze", gaez_path) %>%
@@ -664,9 +662,9 @@ whea_yield =
     get_mapspam_data("whea", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-whea_prod =
-    get_mapspam_data("whea", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## whea_prod =
+##     get_mapspam_data("whea", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 whea_suit =
     get_gaez_suit_data("whe", gaez_path) %>%
@@ -692,9 +690,9 @@ vege_yield =
     get_mapspam_data("vege", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-vege_prod =
-    get_mapspam_data("vege", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## vege_prod =
+##     get_mapspam_data("vege", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 vege_suit =
     get_gaez_suit_data("oni", gaez_path) %>%
@@ -720,9 +718,9 @@ rape_yield =
     get_mapspam_data("rape", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-rape_prod =
-    get_mapspam_data("rape", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## rape_prod =
+##     get_mapspam_data("rape", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 rape_suit =
     get_gaez_suit_data("rsd", gaez_path) %>%
@@ -748,9 +746,9 @@ bean_yield =
     get_mapspam_data("bean", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-bean_prod =
-    get_mapspam_data("bean", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## bean_prod =
+##     get_mapspam_data("bean", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 bean_suit =
     get_gaez_suit_data("phb", gaez_path) %>%
@@ -776,9 +774,9 @@ chic_yield =
     get_mapspam_data("chic", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-chic_prod =
-    get_mapspam_data("chic", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## chic_prod =
+##     get_mapspam_data("chic", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 chic_suit =
     get_gaez_suit_data("chk", gaez_path) %>%
@@ -804,9 +802,9 @@ pige_yield =
     get_mapspam_data("pige", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-pige_prod =
-    get_mapspam_data("pige", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## pige_prod =
+##     get_mapspam_data("pige", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 pige_suit =
     get_gaez_suit_data("pig", gaez_path) %>%
@@ -832,9 +830,9 @@ cowp_yield =
     get_mapspam_data("cowp", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-cowp_prod =
-    get_mapspam_data("cowp", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## cowp_prod =
+##     get_mapspam_data("cowp", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 cowp_suit =
     get_gaez_suit_data("cow", gaez_path) %>%
@@ -860,9 +858,9 @@ lent_yield =
     get_mapspam_data("lent", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-lent_prod =
-    get_mapspam_data("lent", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## lent_prod =
+##     get_mapspam_data("lent", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 lent_suit =
     get_gaez_suit_data("chk", gaez_path) %>%
@@ -888,9 +886,9 @@ opul_yield =
     get_mapspam_data("opul", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-opul_prod =
-    get_mapspam_data("opul", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## opul_prod =
+##     get_mapspam_data("opul", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 opul_suit =
     get_gaez_suit_data("chk", gaez_path) %>%
@@ -918,9 +916,9 @@ sugc_yield =
     get_mapspam_data("sugc", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-sugc_prod =
-    get_mapspam_data("sugc", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## sugc_prod =
+##     get_mapspam_data("sugc", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugc_suit =
     get_gaez_suit_data("suc", gaez_path) %>%
@@ -946,9 +944,9 @@ sugb_yield =
     get_mapspam_data("sugb", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-sugb_prod =
-    get_mapspam_data("sugb", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## sugb_prod =
+##     get_mapspam_data("sugb", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugb_suit =
     get_gaez_suit_data("sub", gaez_path) %>%
@@ -974,9 +972,9 @@ cnut_yield =
     get_mapspam_data("cnut", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-cnut_prod =
-    get_mapspam_data("cnut", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## cnut_prod =
+##     get_mapspam_data("cnut", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 cnut_suit =
     get_gaez_suit_data("con", gaez_path) %>%
@@ -1002,9 +1000,9 @@ oilp_yield =
     get_mapspam_data("oilp", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-oilp_prod =
-    get_mapspam_data("oilp", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## oilp_prod =
+##     get_mapspam_data("oilp", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 oilp_suit =
     get_gaez_suit_data("olp", gaez_path) %>%
@@ -1030,9 +1028,9 @@ trof_yield =
     get_mapspam_data("trof", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-trof_prod =
-    get_mapspam_data("trof", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## trof_prod =
+##     get_mapspam_data("trof", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 trof_suit =
     get_gaez_suit_data("ban", gaez_path) %>%
@@ -1058,9 +1056,9 @@ temf_yield =
     get_mapspam_data("temf", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-temf_prod =
-    get_mapspam_data("temf", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## temf_prod =
+##     get_mapspam_data("temf", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB temperate fruit suitability based on maize
 temf_suit =
@@ -1087,9 +1085,9 @@ bana_yield =
     get_mapspam_data("bana", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-bana_prod =
-    get_mapspam_data("bana", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## bana_prod =
+##     get_mapspam_data("bana", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 bana_suit =
     get_gaez_suit_data("ban", gaez_path) %>%
@@ -1115,9 +1113,9 @@ plnt_yield =
     get_mapspam_data("plnt", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-plnt_prod =
-    get_mapspam_data("plnt", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## plnt_prod =
+##     get_mapspam_data("plnt", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB plantain suitability based on plantain
 plnt_suit =
@@ -1144,9 +1142,9 @@ cass_yield =
     get_mapspam_data("cass", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-cass_prod =
-    get_mapspam_data("cass", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## cass_prod =
+##     get_mapspam_data("cass", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 cass_suit =
     get_gaez_suit_data("csv", gaez_path) %>%
@@ -1173,9 +1171,9 @@ yams_yield =
     get_mapspam_data("yams", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-yams_prod =
-    get_mapspam_data("yams", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## yams_prod =
+##     get_mapspam_data("yams", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 yams_suit =
     get_gaez_suit_data("yam", gaez_path) %>%
@@ -1202,9 +1200,9 @@ orts_yield =
     get_mapspam_data("orts", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-orts_prod =
-    get_mapspam_data("orts", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## orts_prod =
+##     get_mapspam_data("orts", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB other roots suitability based on yam
 orts_suit =
@@ -1232,9 +1230,9 @@ coco_yield =
     get_mapspam_data("coco", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-coco_prod =
-    get_mapspam_data("coco", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## coco_prod =
+##     get_mapspam_data("coco", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 coco_suit =
     get_gaez_suit_data("coc", gaez_path) %>%
@@ -1260,9 +1258,9 @@ teas_yield =
     get_mapspam_data("teas", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-teas_prod =
-    get_mapspam_data("teas", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## teas_prod =
+##     get_mapspam_data("teas", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 teas_suit =
     get_gaez_suit_data("tea", gaez_path) %>%
@@ -1288,9 +1286,9 @@ acof_yield =
     get_mapspam_data("acof", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-acof_prod =
-    get_mapspam_data("acof", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## acof_prod =
+##     get_mapspam_data("acof", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 acof_suit =
     get_gaez_suit_data("cof", gaez_path) %>%
@@ -1316,9 +1314,9 @@ rcof_yield =
     get_mapspam_data("rcof", mapspam_path, "yield") %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-rcof_prod =
-    get_mapspam_data("rcof", mapspam_path, "production") %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+## rcof_prod =
+##     get_mapspam_data("rcof", mapspam_path, "production") %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 rcof_suit =
     get_gaez_suit_data("cof", gaez_path) %>%

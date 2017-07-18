@@ -36,6 +36,6 @@ crop_area_2005 =
     `/`(100)
 
 writeRaster(crop_area_2005,
-            file.path(lulc_path, "iiasa_ifpri_cropland_map_5m.tif"),
+            file.path(lulc_path, "iiasa_ifpri_cropland_map_5m_ll.tif"),
             format="GTiff",
             overwrite=TRUE)

@@ -8,9 +8,9 @@ library(Rcpp)
 library(RcppArmadillo)
 options(stringsAsFactors = FALSE)
 
-## source("code/process_mapspam.R")
+## source("code/prepare_input_data.R")
 sourceCpp("code/allocate.cpp")
-
+ 
 ## india region
 india_rgn = raster("data/gcam_32rgn_rast_ll.tif")
 india_rgn[india_rgn != 17] = NA

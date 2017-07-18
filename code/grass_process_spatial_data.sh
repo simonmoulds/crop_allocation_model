@@ -17,7 +17,7 @@ fi
 proj='+proj=eck4 +lon_0=0 +x_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
 gdalwarp -t_srs "${proj}"\
 	 -tr 9250 9250 \
-	 "${datadir}"/iiasa-ifpri-cropland-map/iiasa_ifpri_cropland_map_5m.tif\
+	 "${datadir}"/iiasa-ifpri-cropland-map/iiasa_ifpri_cropland_map_5m_ll.tif\
 	 "${datadir}"/iiasa-ifpri-cropland-map/iiasa_ifpri_cropland_map_5m_eck4_tmp.tif
 
 # =======================================
@@ -58,68 +58,69 @@ rm mygrassjob_pt1.sh
 # 3 - MapSPAM
 # =======================================
 
-mapspam_path="${datadir}"/mapspam_data
+# mapspam_path="${datadir}"/mapspam_data
 
-if [ ! -d "${mapspam_path}" ]
-then
-    mkdir "${mapspam_path}"
-    # rm -r "${mapspam_path}"
-fi
+# if [ ! -d "${mapspam_path}" ]
+# then
+#     mkdir "${mapspam_path}"
+#     # rm -r "${mapspam_path}"
+# fi
 
-unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_phys_area.geotiff.zip -d "${mapspam_path}"
-unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_harv_area.geotiff.zip -d "${mapspam_path}"
-unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_yield.geotiff.zip -d "${mapspam_path}"
+# unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_phys_area.geotiff.zip -d "${mapspam_path}"
+# unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_harv_area.geotiff.zip -d "${mapspam_path}"
+# unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_yield.geotiff.zip -d "${mapspam_path}"
 
-# a - import MapSPAM files to latlong
-if [ -f tmp ]
-then
-    rm tmp
-fi
-touch tmp 
+# # a - import MapSPAM files to latlong
+# if [ -f tmp ]
+# then
+#     rm tmp
+# fi
+# touch tmp 
 
-echo 'export GRASS_MESSAGE_FORMAT=plain
-datadir=/home/links/sm775/projects/crop_allocation_model/data
-g.region e=180E w=180W n=90N s=90S res=0:05:00
-g.region -p
-wd=`pwd`
-cd "${datadir}"/mapspam_data
-for file in *.tif
-do
-    basenm=${file%%.*}
-    echo "${basenm}" >> tmp
-    r.in.gdal input="${file}" output="${basenm}" --overwrite
-done
-cd "${wd}"' > mygrassjob_pt2a.sh
+# echo 'export GRASS_MESSAGE_FORMAT=plain
+# datadir=/home/links/sm775/projects/crop_allocation_model/data
+# g.region e=180E w=180W n=90N s=90S res=0:05:00
+# g.region -p
+# wd=`pwd`
+# cd "${datadir}"/mapspam_data
+# for file in *.tif
+# do
+#     basenm=${file%%.*}
+#     echo "${basenm}" >> tmp
+#     r.in.gdal input="${file}" output="${basenm}" --overwrite
+#     # r.out.gdal input="${basenm}" output="${basenm}"_ll.tif format=GTiff
+# done
+# cd "${wd}"' > mygrassjob_pt2a.sh
 
-chmod u+x mygrassjob_pt2a.sh
-export GRASS_BATCH_JOB="${wd}"/mygrassjob_pt2a.sh
-grass64 /scratch/grassdata/latlong/global
-unset GRASS_BATCH_JOB
-rm mygrassjob_pt2a.sh
+# chmod u+x mygrassjob_pt2a.sh
+# export GRASS_BATCH_JOB="${wd}"/mygrassjob_pt2a.sh
+# grass64 /scratch/grassdata/latlong/global
+# unset GRASS_BATCH_JOB
+# rm mygrassjob_pt2a.sh
 
-# b - reproject to Eckert IV
-echo 'export GRASS_MESSAGE_FORMAT=plain
-datadir=/home/links/sm775/projects/crop_allocation_model/data
-g.region rast=iiasa_ifpri_cropland_map
-g.region -p
-wd=`pwd`
-cd "${datadir}"/mapspam_data
-while read line
-do
-    method=bilinear
-    ll="${line}"
-    ea="${line}"_eck4
-    r.proj -n location=latlong mapset=global input="${ll}" output="${ea}" method="${method}" --overwrite
-    r.out.gdal input="${ea}" output="${ea}".tif format=GTiff
-done < tmp
-rm tmp
-cd "${wd}"' > mygrassjob_pt2b.sh
+# # b - reproject to Eckert IV
+# echo 'export GRASS_MESSAGE_FORMAT=plain
+# datadir=/home/links/sm775/projects/crop_allocation_model/data
+# g.region rast=iiasa_ifpri_cropland_map
+# g.region -p
+# wd=`pwd`
+# cd "${datadir}"/mapspam_data
+# while read line
+# do
+#     method=bilinear
+#     ll="${line}"
+#     ea="${line}"_eck4
+#     r.proj -n location=latlong mapset=global input="${ll}" output="${ea}" method="${method}" --overwrite
+#     r.out.gdal input="${ea}" output="${ea}".tif format=GTiff
+# done < tmp
+# rm tmp
+# cd "${wd}"' > mygrassjob_pt2b.sh
 
-chmod u+x mygrassjob_pt2b.sh
-export GRASS_BATCH_JOB="${wd}"/mygrassjob_pt2b.sh
-grass64 /scratch/grassdata/eckertiv/PERMANENT
-unset GRASS_BATCH_JOB
-rm mygrassjob_pt2b.sh
+# chmod u+x mygrassjob_pt2b.sh
+# export GRASS_BATCH_JOB="${wd}"/mygrassjob_pt2b.sh
+# grass64 /scratch/grassdata/eckertiv/PERMANENT
+# unset GRASS_BATCH_JOB
+# rm mygrassjob_pt2b.sh
 
 # =======================================
 # 4 - GAEZ
@@ -160,6 +161,7 @@ do
     echo $fn
     echo "${fn}" >> tmp
     r.in.gdal input="${dir}"/"${fn}".tif output="${fn}" --overwrite
+    r.out.gdal input="${fn}" output="${datadir}"/gaez_data/"${fn}"_ll.tif format=GTiff
 done' > mygrassjob_pt3a.sh
 
 chmod u+x mygrassjob_pt3a.sh
