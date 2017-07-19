@@ -10,7 +10,9 @@ options(stringsAsFactors = FALSE)
 
 ## source("code/prepare_input_data.R")
 sourceCpp("code/allocate.cpp")
- 
+
+input_levels = c("irri","rain_h","rain_l","rain_s")
+
 ## load required input data (from prepare_input_data.R)
 india_rgn = readRDS("data/india_rgn_raster.rds")
 
@@ -22,19 +24,23 @@ crop_area_2005 = readRDS("data/iiasa_cropland_area.rds")
 
 area_df =
     readRDS("data/mapspam_crop_area_df.rds") %>%
-    filter(!input %in% c("rain_h","rain_l","rain_s","total"))
+    filter(input %in% input_levels)
+    ## filter(!input %in% c("rain_h","rain_l","rain_s","total"))
 
 yield_df =
     readRDS("data/mapspam_crop_yield_df.rds") %>%
-    filter(!input %in% c("rain_h","rain_l","rain_s","total"))
+    filter(input %in% input_levels)
+    ## filter(!input %in% c("rain_h","rain_l","rain_s","total"))
     
 nb_df =
     readRDS("data/crop_neighb_df.rds") %>%
-    filter(!input %in% c("rain_h","rain_l","rain_s","total"))
+    filter(input %in% input_levels)
+    ## filter(!input %in% c("rain_h","rain_l","rain_s","total"))
 
 suit_df =
     readRDS("data/crop_suit_df.rds") %>%
-    filter(!input %in% c("rain_h","rain_l","rain_s","total"))
+    filter(input %in% input_levels)
+    ## filter(!input %in% c("rain_h","rain_l","rain_s","total"))
     
 dmd = readRDS("data/gcam_reference_demand.rds")
 
@@ -44,9 +50,6 @@ n_input = 2
 n_season = 3
 input_nms = c("irrigated","rainfed")     ## include names for the purpose of writing output files
 season_nms = c("annual","kharif","rabi")
-
-## time
-time = seq(2005, 2100, by=5)
 
 ## initial matrices
 init_area_mat =
@@ -83,7 +86,7 @@ init_tsuit_mat =
     pmax(init_nb_mat, init_suit_mat)
 
 ## model parameters
-alloc_order = c("rice","whea")
+alloc_order = c("rice","whea","maiz","sugc")
 fact = 0.01 ## this value controls how much change is made in each cell
 rand_min = 0
 rand_max = 0.25
@@ -92,6 +95,7 @@ rand_max = 0.25
 out_path = "data"
 
 ## start routine
+time = seq(2005, 2100, by=5)
 area_mat = init_area_mat
 total_area_mat = init_total_area_mat
 yield_mat = init_yield_mat
