@@ -11,44 +11,35 @@ options(stringsAsFactors = FALSE)
 ## source("code/prepare_input_data.R")
 sourceCpp("code/allocate.cpp")
  
-## india region
-india_rgn = raster("data/gcam_32rgn_rast_ll.tif")
-india_rgn[india_rgn != 17] = NA
-india_rgn = india_rgn %>% trim
-india_rgn[!is.na(india_rgn)] = 1
+## load required input data (from prepare_input_data.R)
+india_rgn = readRDS("data/india_rgn_raster.rds")
 
-india_ext = extent(india_rgn)
-cell_ix = which(!is.na(getValues(india_rgn)))
-n_cell = length(cell_ix)
+cell_area = readRDS("data/india_rgn_cell_area.rds")
 
-## global cropland map
-crop_area_2005 =
-    raster("data/rawdata/iiasa-ifpri-cropland-map/Hybrid_10042015v9.img") %>%
-    crop(india_ext) %>%
-    raster::aggregate(fact=10, FUN=mean) %>%
-    `/`(100) 
+cell_ix = readRDS("data/india_rgn_cell_ix.rds")
 
-## load data
-area_df       =
+crop_area_2005 = readRDS("data/iiasa_cropland_area.rds")
+
+area_df =
     readRDS("data/mapspam_crop_area_df.rds") %>%
     filter(!input %in% c("rain_h","rain_l","rain_s","total"))
 
-yield_df      =
+yield_df =
     readRDS("data/mapspam_crop_yield_df.rds") %>%
     filter(!input %in% c("rain_h","rain_l","rain_s","total"))
     
-## suit_df       = readRDS("data/neighb_crop_suit_df_orig.rds")
-nb_df         =
+nb_df =
     readRDS("data/crop_neighb_df.rds") %>%
     filter(!input %in% c("rain_h","rain_l","rain_s","total"))
 
-suit_df       =
+suit_df =
     readRDS("data/crop_suit_df.rds") %>%
     filter(!input %in% c("rain_h","rain_l","rain_s","total"))
     
-dmd           = readRDS("data/gcam_reference_demand.rds")
+dmd = readRDS("data/gcam_reference_demand.rds")
 
 ## study region characteristics
+n_cell = length(cell_ix)
 n_input = 2
 n_season = 3
 input_nms = c("irrigated","rainfed")     ## include names for the purpose of writing output files
@@ -88,11 +79,8 @@ init_suit_mat =
 
 ## total suitability is the maximum of biophysical suitability from
 ## GAEZ and neighbourhood suitability
-init_tsuit_mat = pmax(init_nb_mat, init_suit_mat)
-
-## ultimately, all maps will be projected in an equal area projection and hence
-## cell_area will be a single value
-cell_area = getValues(area(india_rgn) * 100) %>% `[`(cell_ix)
+init_tsuit_mat =
+    pmax(init_nb_mat, init_suit_mat)
 
 ## model parameters
 alloc_order = c("rice","whea")
@@ -109,8 +97,8 @@ total_area_mat = init_total_area_mat
 yield_mat = init_yield_mat
 suit_mat = init_tsuit_mat
 
-## for (i in 2:length(time)) {
-for (i in 2:4) {    
+for (i in 2:length(time)) {    
+
     ## check dimensions etc.
     if (!isTRUE(all.equal(colnames(dmd), colnames(area_mat), colnames(total_area_mat), colnames(yield_mat)))) {
         stop()
@@ -121,7 +109,8 @@ for (i in 2:4) {
     }
 
     ## TODO: run land use change model here to get cropland area
-    cropland_area = getValues(crop_area_2005 * area(crop_area_2005) * 100) %>% `[`(cell_ix)
+    ## cropland_area = getValues(crop_area_2005 * area(crop_area_2005) * 100) %>% `[`(cell_ix)
+    cropland_area = crop_area_2005
    
     ## calculate demand (the amount by which production must change, rather than
     ## total production)
@@ -226,10 +215,6 @@ for (i in 2:4) {
         }
     }
 }
-
-## cppFunction(code='NumericMatrix addmat(NumericMatrix x, NumericMatrix y) {
-##   return x + y;
-## }')
 
 ## library(RcppArmadillo)
 ## cppFunction("arma::mat schur(arma::mat& a, arma::mat& b) {

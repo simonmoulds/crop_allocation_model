@@ -7,7 +7,7 @@ datadir="${wd}"/data
 # 1 - create template map
 # =======================================
 
-Rscript code/process_cropland_map.R
+Rscript code/process_cropland_map.R # this takes a long time!
 
 if [ -f "${datadir}"/iiasa-ifpri-cropland-map/iiasa_ifpri_cropland_map_5m_eck4.tif ]
 then
@@ -58,69 +58,67 @@ rm mygrassjob_pt1.sh
 # 3 - MapSPAM
 # =======================================
 
-# mapspam_path="${datadir}"/mapspam_data
+mapspam_path="${datadir}"/mapspam_data
 
-# if [ ! -d "${mapspam_path}" ]
-# then
-#     mkdir "${mapspam_path}"
-#     # rm -r "${mapspam_path}"
-# fi
+if [ ! -d "${mapspam_path}" ]
+then
+    mkdir "${mapspam_path}"
+fi
 
-# unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_phys_area.geotiff.zip -d "${mapspam_path}"
-# unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_harv_area.geotiff.zip -d "${mapspam_path}"
-# unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_yield.geotiff.zip -d "${mapspam_path}"
+unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_phys_area.geotiff.zip -d "${mapspam_path}"
+unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_harv_area.geotiff.zip -d "${mapspam_path}"
+unzip -o data/rawdata/MapSPAM/spam2005V3r1_global_yield.geotiff.zip -d "${mapspam_path}"
 
-# # a - import MapSPAM files to latlong
-# if [ -f tmp ]
-# then
-#     rm tmp
-# fi
-# touch tmp 
+# a - import MapSPAM files to latlong
+echo 'export GRASS_MESSAGE_FORMAT=plain
+datadir=/home/links/sm775/projects/crop_allocation_model/data
+g.region e=180E w=180W n=90N s=90S res=0:05:00
+g.region -p
+wd=`pwd`
+cd "${datadir}"/mapspam_data
+if [ -f tmp1 ] then rm tmp1
+if [ -f tmp2 ] then rm tmp2
+touch tmp2
+ls *.tif | grep "^SPAM2005V3r1_global_[A-Z]\{1\}_[A-Z]\{2\}_[A-Z]\{4\}_[A-Z]\{1\}.tif" > tmp1
+while read line
+do
+    basenm=${line%%.*}
+    echo "${basenm}" >> tmp2
+    r.in.gdal input="${line}" output="${basenm}" --overwrite
+    r.out.gdal input="${basenm}" output="${basenm}"_ll.tif format=GTiff
+done < tmp1
+rm tmp1
+cd "${wd}"' > mygrassjob_pt2a.sh
 
-# echo 'export GRASS_MESSAGE_FORMAT=plain
-# datadir=/home/links/sm775/projects/crop_allocation_model/data
-# g.region e=180E w=180W n=90N s=90S res=0:05:00
-# g.region -p
-# wd=`pwd`
-# cd "${datadir}"/mapspam_data
-# for file in *.tif
-# do
-#     basenm=${file%%.*}
-#     echo "${basenm}" >> tmp
-#     r.in.gdal input="${file}" output="${basenm}" --overwrite
-#     # r.out.gdal input="${basenm}" output="${basenm}"_ll.tif format=GTiff
-# done
-# cd "${wd}"' > mygrassjob_pt2a.sh
+chmod u+x mygrassjob_pt2a.sh
+export GRASS_BATCH_JOB="${wd}"/mygrassjob_pt2a.sh
+grass64 /scratch/grassdata/latlong/global
+unset GRASS_BATCH_JOB
+rm mygrassjob_pt2a.sh
 
-# chmod u+x mygrassjob_pt2a.sh
-# export GRASS_BATCH_JOB="${wd}"/mygrassjob_pt2a.sh
-# grass64 /scratch/grassdata/latlong/global
-# unset GRASS_BATCH_JOB
-# rm mygrassjob_pt2a.sh
+# b - reproject to Eckert IV
+echo 'export GRASS_MESSAGE_FORMAT=plain
+datadir=/home/links/sm775/projects/crop_allocation_model/data
+g.region rast=iiasa_ifpri_cropland_map
+g.region -p
+wd=`pwd`
+cd "${datadir}"/mapspam_data
+while read line
+do
+    method=bilinear
+    ll="${line}"
+    ea="${line}"_eck4
+    r.proj -n location=latlong mapset=global input="${ll}" output="${ea}" method="${method}" --overwrite
+    r.out.gdal input="${ea}" output="${ea}".tif format=GTiff
+done < tmp2
+rm tmp2
+cd "${wd}"' > mygrassjob_pt2b.sh
 
-# # b - reproject to Eckert IV
-# echo 'export GRASS_MESSAGE_FORMAT=plain
-# datadir=/home/links/sm775/projects/crop_allocation_model/data
-# g.region rast=iiasa_ifpri_cropland_map
-# g.region -p
-# wd=`pwd`
-# cd "${datadir}"/mapspam_data
-# while read line
-# do
-#     method=bilinear
-#     ll="${line}"
-#     ea="${line}"_eck4
-#     r.proj -n location=latlong mapset=global input="${ll}" output="${ea}" method="${method}" --overwrite
-#     r.out.gdal input="${ea}" output="${ea}".tif format=GTiff
-# done < tmp
-# rm tmp
-# cd "${wd}"' > mygrassjob_pt2b.sh
-
-# chmod u+x mygrassjob_pt2b.sh
-# export GRASS_BATCH_JOB="${wd}"/mygrassjob_pt2b.sh
-# grass64 /scratch/grassdata/eckertiv/PERMANENT
-# unset GRASS_BATCH_JOB
-# rm mygrassjob_pt2b.sh
+chmod u+x mygrassjob_pt2b.sh
+export GRASS_BATCH_JOB="${wd}"/mygrassjob_pt2b.sh
+grass64 /scratch/grassdata/eckertiv/PERMANENT
+unset GRASS_BATCH_JOB
+rm mygrassjob_pt2b.sh
 
 # =======================================
 # 4 - GAEZ
