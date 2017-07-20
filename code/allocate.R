@@ -11,49 +11,21 @@ options(stringsAsFactors = FALSE)
 ## source("code/prepare_input_data.R")
 sourceCpp("code/allocate.cpp")
 
+## study region characteristics
 input_levels = c("irri","rain_h","rain_l","rain_s")
+growing_seasons = c("annual","kharif","rabi")
+india_rgn = readRDS("data/india_rgn_raster.rds")
+cell_area = readRDS("data/india_rgn_cell_area.rds")
+cell_ix = readRDS("data/india_rgn_cell_ix.rds")
+crop_area_2005 = readRDS("data/iiasa_cropland_area.rds")
+n_cell = length(cell_ix)
+n_input = length(input_levels)
+n_season = length(growing_seasons)
 
 ## load required input data (from prepare_input_data.R)
-india_rgn = readRDS("data/india_rgn_raster.rds")
-
-cell_area = readRDS("data/india_rgn_cell_area.rds")
-
-cell_ix = readRDS("data/india_rgn_cell_ix.rds")
-
-crop_area_2005 = readRDS("data/iiasa_cropland_area.rds")
-
-area_df =
-    readRDS("data/mapspam_crop_area_df.rds") %>%
-    filter(input %in% input_levels)
-    ## filter(!input %in% c("rain_h","rain_l","rain_s","total"))
-
-yield_df =
-    readRDS("data/mapspam_crop_yield_df.rds") %>%
-    filter(input %in% input_levels)
-    ## filter(!input %in% c("rain_h","rain_l","rain_s","total"))
-    
-nb_df =
-    readRDS("data/crop_neighb_df.rds") %>%
-    filter(input %in% input_levels)
-    ## filter(!input %in% c("rain_h","rain_l","rain_s","total"))
-
-suit_df =
-    readRDS("data/crop_suit_df.rds") %>%
-    filter(input %in% input_levels)
-    ## filter(!input %in% c("rain_h","rain_l","rain_s","total"))
-    
-dmd = readRDS("data/gcam_reference_demand.rds")
-
-## study region characteristics
-n_cell = length(cell_ix)
-n_input = 2
-n_season = 3
-input_nms = c("irrigated","rainfed")     ## include names for the purpose of writing output files
-season_nms = c("annual","kharif","rabi")
-
-## initial matrices
 init_area_mat =
-    area_df %>%
+    readRDS("data/mapspam_crop_area_df.rds") %>%
+    filter(input %in% input_levels) %>%
     select(-(cell:input)) %>%
     mutate_each(funs(replace(., is.na(.), 0))) %>%
     as.matrix
@@ -63,27 +35,32 @@ init_total_area_mat =
     `colnames<-`(colnames(init_area_mat))
 
 init_yield_mat =
-    yield_df %>%
+    readRDS("data/mapspam_crop_yield_df.rds") %>%
+    filter(input %in% input_levels) %>%
     select(-(cell:input)) %>%
     mutate_each(funs(replace(., is.na(.), 0))) %>%
     as.matrix
-
+    
 init_nb_mat =
-    nb_df %>%
+    readRDS("data/crop_neighb_df.rds") %>%
+    filter(input %in% input_levels) %>%
     select(-(cell:input)) %>%
     mutate_each(funs(replace(., is.na(.), 0))) %>%
     as.matrix
 
 init_suit_mat =
-    suit_df %>%
+    readRDS("data/crop_suit_df.rds") %>%
+    filter(input %in% input_levels) %>%
     select(-(cell:input)) %>%
     mutate_each(funs(replace(., is.na(.), 0))) %>%
     as.matrix
-
+    
 ## total suitability is the maximum of biophysical suitability from
 ## GAEZ and neighbourhood suitability
 init_tsuit_mat =
     pmax(init_nb_mat, init_suit_mat)
+
+dmd = readRDS("data/gcam_reference_demand.rds")
 
 ## model parameters
 alloc_order = c("rice","whea","maiz","sugc")
@@ -99,10 +76,13 @@ time = seq(2005, 2100, by=5)
 area_mat = init_area_mat
 total_area_mat = init_total_area_mat
 yield_mat = init_yield_mat
-suit_mat = init_tsuit_mat
+nb_mat = init_nb_mat
+suit_mat = init_suit_mat
 
 for (i in 2:length(time)) {    
 
+    tsuit_mat = pmax(nb_mat, suit_mat)
+    
     ## check dimensions etc.
     if (!isTRUE(all.equal(colnames(dmd), colnames(area_mat), colnames(total_area_mat), colnames(yield_mat)))) {
         stop()
@@ -205,19 +185,21 @@ for (i in 2:length(time)) {
                     row_ix = seq((k - 1) * n_input + m, by=n_season * n_input, length.out = n_cell)
                     r[cell_ix] = v[row_ix] ## assign values
 
-                    ## TODO: run neighbourhood calculation here to update suitability
+                    nb = get_mapspam_neighb(list(r), w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)[[1]]
+                    nb_vals = getValues(nb) %>% `[`(cell_ix)
+                    nb_mat[row_ix,crop_ix] = nb_vals ## update nb_mat
 
                     fn = paste0("INDIA_",
                                 toupper(crop), "_",
-                                toupper(season_nms[k]), "_",
-                                toupper(input_nms[m]), "_",
+                                toupper(growing_seasons[k]), "_",
+                                toupper(input_levels[m]), "_",
                                 time[i], ".tif")
                     
                     writeRaster(r, file.path(out_path, fn), format="GTiff", overwrite=TRUE)
                 }
             }
         }
-    }
+    }    
 }
 
 ## library(RcppArmadillo)

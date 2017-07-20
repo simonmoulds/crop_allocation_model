@@ -136,10 +136,6 @@ rice_yield =
     get_mapspam_data("rice", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-## rice_prod =
-##     get_mapspam_data("rice", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-
 rice_suit_w = get_gaez_suit_data("rcw", gaez_path, suffix=suffix)
 rice_suit_d = get_gaez_suit_data("rcd", gaez_path, suffix=suffix)
 rice_suit =
@@ -173,10 +169,6 @@ barl_harv =
 barl_yield =
     get_mapspam_data("barl", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## barl_prod =
-##     get_mapspam_data("barl", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 barl_suit =
     get_gaez_suit_data("brl", gaez_path, suffix=suffix) %>%
@@ -184,11 +176,6 @@ barl_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 barl_nb = get_mapspam_neighb(barl_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-
-## barl_irri_nb = focal(barl_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## barl_irri_suit = barl_irri_nb / cellStats(barl_irri_nb, stat=max)
-## barl_rain_nb = focal(barl_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## barl_rain_suit = barl_rain_nb / cellStats(barl_rain_nb, stat=max)
 
 ## maize
 maiz_phys =
@@ -202,10 +189,6 @@ maiz_harv =
 maiz_yield =
     get_mapspam_data("maiz", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## maiz_prod =
-##     get_mapspam_data("maiz", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 maiz_suit =
     get_gaez_suit_data("mze", gaez_path, suffix=suffix) %>%
@@ -213,11 +196,6 @@ maiz_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 maiz_nb = get_mapspam_neighb(maiz_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-
-## maiz_irri_nb = focal(maiz_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## maiz_irri_suit = maiz_irri_nb / cellStats(maiz_irri_nb, stat=max)
-## maiz_rain_nb = focal(maiz_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## maiz_rain_suit = maiz_rain_nb / cellStats(maiz_rain_nb, stat=max)
 
 ## millet
 pmil_phys =
@@ -231,10 +209,6 @@ pmil_harv =
 pmil_yield =
     get_mapspam_data("pmil", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## pmil_prod =
-##     get_mapspam_data("pmil", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 pmil_suit =
     get_gaez_suit_data("pml", gaez_path, suffix=suffix) %>%
@@ -242,11 +216,6 @@ pmil_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 pmil_nb = get_mapspam_neighb(pmil_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-
-## pmil_irri_nb = focal(pmil_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## pmil_irri_suit = pmil_irri_nb / cellStats(pmil_irri_nb, stat=max)
-## pmil_rain_nb = focal(pmil_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## pmil_rain_suit = pmil_rain_nb / cellStats(pmil_rain_nb, stat=max)
 
 smil_phys =
     get_mapspam_data("smil", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -260,20 +229,12 @@ smil_yield =
     get_mapspam_data("smil", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-## smil_prod =
-##     get_mapspam_data("smil", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-
 smil_suit =
     get_gaez_suit_data("fml", gaez_path, suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 smil_nb = get_mapspam_neighb(smil_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## smil_irri_nb = focal(smil_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## smil_irri_suit = smil_irri_nb / cellStats(smil_irri_nb, stat=max)
-## smil_rain_nb = focal(smil_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## smil_rain_suit = smil_rain_nb / cellStats(smil_rain_nb, stat=max)
 
 ## sorghum
 sorg_phys =
@@ -287,10 +248,6 @@ sorg_harv =
 sorg_yield =
     get_mapspam_data("sorg", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## sorg_prod =
-##     get_mapspam_data("sorg", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 sorg_suit =
     get_gaez_suit_data("srg", gaez_path, suffix=suffix) %>%
@@ -298,10 +255,6 @@ sorg_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sorg_nb = get_mapspam_neighb(sorg_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sorg_irri_nb = focal(sorg_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sorg_irri_suit = sorg_irri_nb / cellStats(sorg_irri_nb, stat=max)
-## sorg_rain_nb = focal(sorg_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sorg_rain_suit = sorg_rain_nb / cellStats(sorg_rain_nb, stat=max)
 
 ## other cereal
 ocer_phys =
@@ -315,10 +268,6 @@ ocer_harv =
 ocer_yield =
     get_mapspam_data("ocer", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## ocer_prod =
-##     get_mapspam_data("ocer", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB suitability based on oat
 ocer_suit =
@@ -327,10 +276,6 @@ ocer_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 ocer_nb = get_mapspam_neighb(ocer_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## ocer_irri_nb = focal(ocer_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## ocer_irri_suit = ocer_irri_nb / cellStats(ocer_irri_nb, stat=max)
-## ocer_rain_nb = focal(ocer_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## ocer_rain_suit = ocer_rain_nb / cellStats(ocer_rain_nb, stat=max)
 
 ## soybean
 soyb_phys =
@@ -344,10 +289,6 @@ soyb_harv =
 soyb_yield =
     get_mapspam_data("soyb", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## soyb_prod =
-##     get_mapspam_data("soyb", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 soyb_suit =
     get_gaez_suit_data("soy", gaez_path, suffix=suffix) %>%
@@ -355,11 +296,6 @@ soyb_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 soyb_nb = get_mapspam_neighb(soyb_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-
-## soyb_irri_nb = focal(soyb_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## soyb_irri_suit = soyb_irri_nb / cellStats(soyb_irri_nb, stat=max)
-## soyb_rain_nb = focal(soyb_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## soyb_rain_suit = soyb_rain_nb / cellStats(soyb_rain_nb, stat=max)
 
 ## groundnut
 grou_phys =
@@ -373,10 +309,6 @@ grou_harv =
 grou_yield =
     get_mapspam_data("grou", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## grou_prod =
-##     get_mapspam_data("grou", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 grou_suit =
     get_gaez_suit_data("grd", gaez_path, suffix=suffix) %>%
@@ -384,11 +316,6 @@ grou_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 grou_nb = get_mapspam_neighb(grou_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-
-## grou_irri_nb = focal(grou_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## grou_irri_suit = grou_irri_nb / cellStats(grou_irri_nb, stat=max)
-## grou_rain_nb = focal(grou_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## grou_rain_suit = grou_rain_nb / cellStats(grou_rain_nb, stat=max)
 
 ## sesameseed
 sesa_phys =
@@ -402,10 +329,6 @@ sesa_harv =
 sesa_yield =
     get_mapspam_data("sesa", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## sesa_prod =
-##     get_mapspam_data("sesa", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB: suitability based on rapeseed
 sesa_suit =
@@ -414,10 +337,6 @@ sesa_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sesa_nb = get_mapspam_neighb(sesa_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sesa_irri_nb = focal(sesa_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sesa_irri_suit = sesa_irri_nb / cellStats(sesa_irri_nb, stat=max)
-## sesa_rain_nb = focal(sesa_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sesa_rain_suit = sesa_rain_nb / cellStats(sesa_rain_nb, stat=max)
 
 ## sunflower
 sunf_phys =
@@ -431,10 +350,6 @@ sunf_harv =
 sunf_yield =
     get_mapspam_data("sunf", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## sunf_prod =
-##     get_mapspam_data("sunf", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 sunf_suit =
     get_gaez_suit_data("sfl", gaez_path, suffix=suffix) %>%
@@ -442,10 +357,6 @@ sunf_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sunf_nb = get_mapspam_neighb(sunf_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sunf_irri_nb = focal(sunf_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sunf_irri_suit = sunf_irri_nb / cellStats(sunf_irri_nb, stat=max)
-## sunf_rain_nb = focal(sunf_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sunf_rain_suit = sunf_rain_nb / cellStats(sunf_rain_nb, stat=max)
 
 ## otheroils
 ooil_phys =
@@ -459,10 +370,6 @@ ooil_harv =
 ooil_yield =
     get_mapspam_data("ooil", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## ooil_prod =
-##     get_mapspam_data("ooil", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB other oil suitability based on olive oil
 ooil_suit =
@@ -471,10 +378,6 @@ ooil_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 ooil_nb = get_mapspam_neighb(ooil_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## ooil_irri_nb = focal(ooil_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## ooil_irri_suit = ooil_irri_nb / cellStats(ooil_irri_nb, stat=max)
-## ooil_rain_nb = focal(ooil_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## ooil_rain_suit = ooil_rain_nb / cellStats(ooil_rain_nb, stat=max)
 
 ## potato
 pota_phys =
@@ -488,10 +391,6 @@ pota_harv =
 pota_yield =
     get_mapspam_data("pota", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## pota_prod =
-##     get_mapspam_data("pota", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 pota_suit =
     get_gaez_suit_data("wpo", gaez_path, suffix=suffix) %>%
@@ -499,10 +398,6 @@ pota_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 pota_nb = get_mapspam_neighb(pota_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## pota_irri_nb = focal(pota_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## pota_irri_suit = pota_irri_nb / cellStats(pota_irri_nb, stat=max)
-## pota_rain_nb = focal(pota_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## pota_rain_suit = pota_rain_nb / cellStats(pota_rain_nb, stat=max)
 
 ## sweetpotato
 swpo_phys =
@@ -516,10 +411,6 @@ swpo_harv =
 swpo_yield =
     get_mapspam_data("swpo", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## swpo_prod =
-##     get_mapspam_data("swpo", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 swpo_suit =
     get_gaez_suit_data("spo", gaez_path, suffix=suffix) %>%
@@ -527,10 +418,6 @@ swpo_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 swpo_nb = get_mapspam_neighb(swpo_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## swpo_irri_nb = focal(swpo_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## swpo_irri_suit = swpo_irri_nb / cellStats(swpo_irri_nb, stat=max)
-## swpo_rain_nb = focal(swpo_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## swpo_rain_suit = swpo_rain_nb / cellStats(swpo_rain_nb, stat=max)
 
 ## cotton
 cott_phys =
@@ -544,10 +431,6 @@ cott_harv =
 cott_yield =
     get_mapspam_data("cott", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## cott_prod =
-##     get_mapspam_data("cott", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 cott_suit =
     get_gaez_suit_data("cot", gaez_path, suffix=suffix) %>%
@@ -555,10 +438,6 @@ cott_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 cott_nb = get_mapspam_neighb(cott_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cott_irri_nb = focal(cott_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cott_irri_suit = cott_irri_nb / cellStats(cott_irri_nb, stat=max)
-## cott_rain_nb = focal(cott_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cott_rain_suit = cott_rain_nb / cellStats(cott_rain_nb, stat=max)
 
 ## other fibre
 ofib_phys =
@@ -572,10 +451,6 @@ ofib_harv =
 ofib_yield =
     get_mapspam_data("ofib", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## ofib_prod =
-##     get_mapspam_data("ofib", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ofib_suit =
     get_gaez_suit_data("flx", gaez_path, suffix=suffix) %>%
@@ -583,10 +458,6 @@ ofib_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 ofib_nb = get_mapspam_neighb(ofib_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## ofib_irri_nb = focal(ofib_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## ofib_irri_suit = ofib_irri_nb / cellStats(ofib_irri_nb, stat=max)
-## ofib_rain_nb = focal(ofib_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## ofib_rain_suit = ofib_rain_nb / cellStats(ofib_rain_nb, stat=max)
 
 ## tobacco
 toba_phys =
@@ -600,10 +471,6 @@ toba_harv =
 toba_yield =
     get_mapspam_data("toba", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## toba_prod =
-##     get_mapspam_data("toba", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 toba_suit =
     get_gaez_suit_data("tob", gaez_path, suffix=suffix) %>%
@@ -611,10 +478,6 @@ toba_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 toba_nb = get_mapspam_neighb(toba_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## toba_irri_nb = focal(toba_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## toba_irri_suit = toba_irri_nb / cellStats(toba_irri_nb, stat=max)
-## toba_rain_nb = focal(toba_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## toba_rain_suit = toba_rain_nb / cellStats(toba_rain_nb, stat=max)
 
 ## rest of crops
 rest_phys =
@@ -628,10 +491,6 @@ rest_harv =
 rest_yield =
     get_mapspam_data("rest", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## rest_prod =
-##     get_mapspam_data("rest", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 rest_suit =
     get_gaez_suit_data("mze", gaez_path, suffix=suffix) %>%
@@ -639,22 +498,12 @@ rest_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 rest_nb = get_mapspam_neighb(rest_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## rest_irri_nb = focal(rest_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## rest_irri_suit = rest_irri_nb / cellStats(rest_irri_nb, stat=max)
-## rest_rain_nb = focal(rest_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## rest_rain_suit = rest_rain_nb / cellStats(rest_rain_nb, stat=max)
 
 ## rabi crops
 
 ## rice
 
 ## assumes that most irrigated rice occurs during rabi and most rainfed rice occurs during kharif
-## rice_rabi_irri = rice_phys[["irri"]] 
-## rice_rabi_rain = rice_harv[["rain"]] - rice_phys[["rain"]]
-## rice_rabi_rain_h = rice_harv[["rain_h"]] - rice_phys[["rain_h"]]
-## rice_rabi_rain_l = rice_harv[["rain_l"]] - rice_phys[["rain_l"]]
-## rice_rabi_rain_s = rice_harv[["rain_s"]] - rice_phys[["rain_s"]]
-
 rice_rabi_phys =
     list(irri=rice_phys[["irri"]],
          rain=rice_harv[["rain"]] - rice_phys[["rain"]],
@@ -681,10 +530,6 @@ whea_harv =
 whea_yield =
     get_mapspam_data("whea", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## whea_prod =
-##     get_mapspam_data("whea", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 whea_suit =
     get_gaez_suit_data("whe", gaez_path, suffix=suffix) %>%
@@ -692,10 +537,6 @@ whea_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 whea_nb = get_mapspam_neighb(whea_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## whea_irri_nb = focal(whea_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## whea_irri_suit = whea_irri_nb / cellStats(whea_irri_nb, stat=max)
-## whea_rain_nb = focal(whea_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## whea_rain_suit = whea_rain_nb / cellStats(whea_rain_nb, stat=max)
 
 ## vegetables
 vege_phys =
@@ -709,10 +550,6 @@ vege_harv =
 vege_yield =
     get_mapspam_data("vege", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## vege_prod =
-##     get_mapspam_data("vege", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 vege_suit =
     get_gaez_suit_data("oni", gaez_path, suffix=suffix) %>%
@@ -720,10 +557,6 @@ vege_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 vege_nb = get_mapspam_neighb(vege_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## vege_irri_nb = focal(vege_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## vege_irri_suit = vege_irri_nb / cellStats(vege_irri_nb, stat=max)
-## vege_rain_nb = focal(vege_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## vege_rain_suit = vege_rain_nb / cellStats(vege_rain_nb, stat=max)
 
 ## rapeseed
 rape_phys =
@@ -737,10 +570,6 @@ rape_harv =
 rape_yield =
     get_mapspam_data("rape", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## rape_prod =
-##     get_mapspam_data("rape", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 rape_suit =
     get_gaez_suit_data("rsd", gaez_path, suffix=suffix) %>%
@@ -748,10 +577,6 @@ rape_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 rape_nb = get_mapspam_neighb(rape_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## rape_irri_nb = focal(rape_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## rape_irri_suit = rape_irri_nb / cellStats(rape_irri_nb, stat=max)
-## rape_rain_nb = focal(rape_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## rape_rain_suit = rape_rain_nb / cellStats(rape_rain_nb, stat=max)
 
 ## pulses (NB cowpea not present in India according to MapSPAM)
 bean_phys =
@@ -765,10 +590,6 @@ bean_harv =
 bean_yield =
     get_mapspam_data("bean", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## bean_prod =
-##     get_mapspam_data("bean", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 bean_suit =
     get_gaez_suit_data("phb", gaez_path, suffix=suffix) %>%
@@ -776,10 +597,6 @@ bean_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 bean_nb = get_mapspam_neighb(bean_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## bean_irri_nb = focal(bean_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## bean_irri_suit = bean_irri_nb / cellStats(bean_irri_nb, stat=max)
-## bean_rain_nb = focal(bean_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## bean_rain_suit = bean_rain_nb / cellStats(bean_rain_nb, stat=max)
 
 ## chickpea
 chic_phys =
@@ -794,20 +611,12 @@ chic_yield =
     get_mapspam_data("chic", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-## chic_prod =
-##     get_mapspam_data("chic", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-
 chic_suit =
     get_gaez_suit_data("chk", gaez_path, suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 chic_nb = get_mapspam_neighb(chic_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## chic_irri_nb = focal(chic_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## chic_irri_suit = chic_irri_nb / cellStats(chic_irri_nb, stat=max)
-## chic_rain_nb = focal(chic_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## chic_rain_suit = chic_rain_nb / cellStats(chic_rain_nb, stat=max)
 
 ## pigeon pea
 pige_phys =
@@ -821,10 +630,6 @@ pige_harv =
 pige_yield =
     get_mapspam_data("pige", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## pige_prod =
-##     get_mapspam_data("pige", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 pige_suit =
     get_gaez_suit_data("pig", gaez_path, suffix=suffix) %>%
@@ -832,10 +637,6 @@ pige_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 pige_nb = get_mapspam_neighb(pige_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## pige_irri_nb = focal(pige_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## pige_irri_suit = pige_irri_nb / cellStats(pige_irri_nb, stat=max)
-## pige_rain_nb = focal(pige_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## pige_rain_suit = pige_rain_nb / cellStats(pige_rain_nb, stat=max)
 
 ## cowpea
 cowp_phys =
@@ -849,10 +650,6 @@ cowp_harv =
 cowp_yield =
     get_mapspam_data("cowp", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## cowp_prod =
-##     get_mapspam_data("cowp", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 cowp_suit =
     get_gaez_suit_data("cow", gaez_path, suffix=suffix) %>%
@@ -860,10 +657,6 @@ cowp_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 cowp_nb = get_mapspam_neighb(cowp_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cowp_irri_nb = focal(cowp_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cowp_irri_suit = cowp_irri_nb / cellStats(cowp_irri_nb, stat=max)
-## cowp_rain_nb = focal(cowp_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cowp_rain_suit = cowp_rain_nb / cellStats(cowp_rain_nb, stat=max)
 
 ## lentil
 lent_phys =
@@ -877,10 +670,6 @@ lent_harv =
 lent_yield =
     get_mapspam_data("lent", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## lent_prod =
-##     get_mapspam_data("lent", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 lent_suit =
     get_gaez_suit_data("chk", gaez_path, suffix=suffix) %>%
@@ -888,10 +677,6 @@ lent_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 lent_nb = get_mapspam_neighb(lent_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## lent_irri_nb = focal(lent_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## lent_irri_suit = lent_irri_nb / cellStats(lent_irri_nb, stat=max)
-## lent_rain_nb = focal(lent_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## lent_rain_suit = lent_rain_nb / cellStats(lent_rain_nb, stat=max)
 
 ## other pulses
 opul_phys =
@@ -905,10 +690,6 @@ opul_harv =
 opul_yield =
     get_mapspam_data("opul", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## opul_prod =
-##     get_mapspam_data("opul", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 opul_suit =
     get_gaez_suit_data("chk", gaez_path, suffix=suffix) %>%
@@ -916,10 +697,6 @@ opul_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 opul_nb = get_mapspam_neighb(opul_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## opul_irri_nb = focal(opul_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## opul_irri_suit = opul_irri_nb / cellStats(opul_irri_nb, stat=max)
-## opul_rain_nb = focal(opul_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## opul_rain_suit = opul_rain_nb / cellStats(opul_rain_nb, stat=max)
 
 ## annual crops
 
@@ -935,10 +712,6 @@ sugc_harv =
 sugc_yield =
     get_mapspam_data("sugc", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## sugc_prod =
-##     get_mapspam_data("sugc", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugc_suit =
     get_gaez_suit_data("suc", gaez_path, suffix=suffix) %>%
@@ -946,10 +719,6 @@ sugc_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sugc_nb = get_mapspam_neighb(sugc_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sugc_irri_nb = focal(sugc_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sugc_irri_suit = sugc_irri_nb / cellStats(sugc_irri_nb, stat=max)
-## sugc_rain_nb = focal(sugc_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sugc_rain_suit = sugc_rain_nb / cellStats(sugc_rain_nb, stat=max)
 
 ## sugar beet (not grown in India - included for completeness)
 sugb_phys =
@@ -963,10 +732,6 @@ sugb_harv =
 sugb_yield =
     get_mapspam_data("sugb", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## sugb_prod =
-##     get_mapspam_data("sugb", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugb_suit =
     get_gaez_suit_data("sub", gaez_path, suffix=suffix) %>%
@@ -974,10 +739,6 @@ sugb_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sugb_nb = get_mapspam_neighb(sugb_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sugb_irri_nb = focal(sugb_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sugb_irri_suit = sugb_irri_nb / cellStats(sugb_irri_nb, stat=max)
-## sugb_rain_nb = focal(sugb_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## sugb_rain_suit = sugb_rain_nb / cellStats(sugb_rain_nb, stat=max)
 
 ## coconut
 cnut_phys =
@@ -991,10 +752,6 @@ cnut_harv =
 cnut_yield =
     get_mapspam_data("cnut", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## cnut_prod =
-##     get_mapspam_data("cnut", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 cnut_suit =
     get_gaez_suit_data("con", gaez_path, suffix=suffix) %>%
@@ -1002,10 +759,6 @@ cnut_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 cnut_nb = get_mapspam_neighb(cnut_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cnut_irri_nb = focal(cnut_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cnut_irri_suit = cnut_irri_nb / cellStats(cnut_irri_nb, stat=max)
-## cnut_rain_nb = focal(cnut_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cnut_rain_suit = cnut_rain_nb / cellStats(cnut_rain_nb, stat=max)
 
 ## oil palm (not grown in India - included for completeness)
 oilp_phys =
@@ -1020,20 +773,12 @@ oilp_yield =
     get_mapspam_data("oilp", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
     
-## oilp_prod =
-##     get_mapspam_data("oilp", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-
 oilp_suit =
     get_gaez_suit_data("olp", gaez_path, suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 oilp_nb = get_mapspam_neighb(oilp_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## oilp_irri_nb = focal(oilp_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## oilp_irri_suit = oilp_irri_nb / cellStats(oilp_irri_nb, stat=max)
-## oilp_rain_nb = focal(oilp_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## oilp_rain_suit = oilp_rain_nb / cellStats(oilp_rain_nb, stat=max)
 
 ## tropical fruit
 trof_phys =
@@ -1047,10 +792,6 @@ trof_harv =
 trof_yield =
     get_mapspam_data("trof", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## trof_prod =
-##     get_mapspam_data("trof", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 trof_suit =
     get_gaez_suit_data("ban", gaez_path, suffix=suffix) %>%
@@ -1058,10 +799,6 @@ trof_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 trof_nb = get_mapspam_neighb(trof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## trof_irri_nb = focal(trof_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## trof_irri_suit = trof_irri_nb / cellStats(trof_irri_nb, stat=max)
-## trof_rain_nb = focal(trof_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## trof_rain_suit = trof_rain_nb / cellStats(trof_rain_nb, stat=max)
 
 ## temperate fruit
 temf_phys =
@@ -1075,10 +812,6 @@ temf_harv =
 temf_yield =
     get_mapspam_data("temf", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## temf_prod =
-##     get_mapspam_data("temf", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB temperate fruit suitability based on maize
 temf_suit =
@@ -1087,10 +820,6 @@ temf_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 temf_nb = get_mapspam_neighb(temf_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## temf_irri_nb = focal(temf_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## temf_irri_suit = temf_irri_nb / cellStats(temf_irri_nb, stat=max)
-## temf_rain_nb = focal(temf_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## temf_rain_suit = temf_rain_nb / cellStats(temf_rain_nb, stat=max)
 
 ## banana
 bana_phys =
@@ -1104,10 +833,6 @@ bana_harv =
 bana_yield =
     get_mapspam_data("bana", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## bana_prod =
-##     get_mapspam_data("bana", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 bana_suit =
     get_gaez_suit_data("ban", gaez_path, suffix=suffix) %>%
@@ -1115,10 +840,6 @@ bana_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 bana_nb = get_mapspam_neighb(bana_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## bana_irri_nb = focal(bana_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## bana_irri_suit = bana_irri_nb / cellStats(bana_irri_nb, stat=max)
-## bana_rain_nb = focal(bana_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## bana_rain_suit = bana_rain_nb / cellStats(bana_rain_nb, stat=max)
 
 ## plantain
 plnt_phys =
@@ -1132,10 +853,6 @@ plnt_harv =
 plnt_yield =
     get_mapspam_data("plnt", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## plnt_prod =
-##     get_mapspam_data("plnt", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB plantain suitability based on plantain
 plnt_suit =
@@ -1144,10 +861,6 @@ plnt_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 plnt_nb = get_mapspam_neighb(plnt_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## plnt_irri_nb = focal(plnt_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## plnt_irri_suit = plnt_irri_nb / cellStats(plnt_irri_nb, stat=max)
-## plnt_rain_nb = focal(plnt_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## plnt_rain_suit = plnt_rain_nb / cellStats(plnt_rain_nb, stat=max)
 
 ## cassava
 cass_phys =
@@ -1161,10 +874,6 @@ cass_harv =
 cass_yield =
     get_mapspam_data("cass", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## cass_prod =
-##     get_mapspam_data("cass", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 cass_suit =
     get_gaez_suit_data("csv", gaez_path, suffix=suffix) %>%
@@ -1173,10 +882,6 @@ cass_suit =
     ## `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 cass_nb = get_mapspam_neighb(cass_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cass_irri_nb = focal(cass_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cass_irri_suit = cass_irri_nb / cellStats(cass_irri_nb, stat=max)
-## cass_rain_nb = focal(cass_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## cass_rain_suit = cass_rain_nb / cellStats(cass_rain_nb, stat=max)
 
 ## yams
 yams_phys =
@@ -1190,10 +895,6 @@ yams_harv =
 yams_yield =
     get_mapspam_data("yams", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## yams_prod =
-##     get_mapspam_data("yams", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 yams_suit =
     get_gaez_suit_data("yam", gaez_path, suffix=suffix) %>%
@@ -1202,10 +903,6 @@ yams_suit =
     ## `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 yams_nb = get_mapspam_neighb(yams_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## yams_irri_nb = focal(yams_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## yams_irri_suit = yams_irri_nb / cellStats(yams_irri_nb, stat=max)
-## yams_rain_nb = focal(yams_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## yams_rain_suit = yams_rain_nb / cellStats(yams_rain_nb, stat=max)
 
 ## other roots
 orts_phys =
@@ -1219,10 +916,6 @@ orts_harv =
 orts_yield =
     get_mapspam_data("orts", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## orts_prod =
-##     get_mapspam_data("orts", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB other roots suitability based on yam
 orts_suit =
@@ -1232,10 +925,6 @@ orts_suit =
     ## `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 orts_nb = get_mapspam_neighb(orts_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## orts_irri_nb = focal(orts_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## orts_irri_suit = orts_irri_nb / cellStats(orts_irri_nb, stat=max)
-## orts_rain_nb = focal(orts_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## orts_rain_suit = orts_rain_nb / cellStats(orts_rain_nb, stat=max)
 
 ## cocoa
 coco_phys =
@@ -1249,10 +938,6 @@ coco_harv =
 coco_yield =
     get_mapspam_data("coco", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## coco_prod =
-##     get_mapspam_data("coco", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 coco_suit =
     get_gaez_suit_data("coc", gaez_path, suffix=suffix) %>%
@@ -1260,10 +945,6 @@ coco_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 coco_nb = get_mapspam_neighb(coco_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## coco_irri_nb = focal(coco_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## coco_irri_suit = coco_irri_nb / cellStats(coco_irri_nb, stat=max)
-## coco_rain_nb = focal(coco_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## coco_rain_suit = coco_rain_nb / cellStats(coco_rain_nb, stat=max)
 
 ## tea
 teas_phys =
@@ -1277,10 +958,6 @@ teas_harv =
 teas_yield =
     get_mapspam_data("teas", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## teas_prod =
-##     get_mapspam_data("teas", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 teas_suit =
     get_gaez_suit_data("tea", gaez_path, suffix=suffix) %>%
@@ -1288,10 +965,6 @@ teas_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 teas_nb = get_mapspam_neighb(teas_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## teas_irri_nb = focal(teas_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## teas_irri_suit = teas_irri_nb / cellStats(teas_irri_nb, stat=max)
-## teas_rain_nb = focal(teas_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## teas_rain_suit = teas_rain_nb / cellStats(teas_rain_nb, stat=max)
 
 ## arabica coffee
 acof_phys =
@@ -1305,10 +978,6 @@ acof_harv =
 acof_yield =
     get_mapspam_data("acof", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## acof_prod =
-##     get_mapspam_data("acof", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 acof_suit =
     get_gaez_suit_data("cof", gaez_path, suffix=suffix) %>%
@@ -1316,10 +985,6 @@ acof_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 acof_nb = get_mapspam_neighb(acof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## acof_irri_nb = focal(acof_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## acof_irri_suit = acof_irri_nb / cellStats(acof_irri_nb, stat=max)
-## acof_rain_nb = focal(acof_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## acof_rain_suit = acof_rain_nb / cellStats(acof_rain_nb, stat=max)
 
 ## robusta coffee
 rcof_phys =
@@ -1333,10 +998,6 @@ rcof_harv =
 rcof_yield =
     get_mapspam_data("rcof", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
-    
-## rcof_prod =
-##     get_mapspam_data("rcof", mapspam_path, "production", suffix=suffix) %>%
-##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
 rcof_suit =
     get_gaez_suit_data("cof", gaez_path, suffix=suffix) %>%
@@ -1344,18 +1005,10 @@ rcof_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 rcof_nb = get_mapspam_neighb(rcof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## rcof_irri_nb = focal(rcof_harv[["irri"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## rcof_irri_suit = rcof_irri_nb / cellStats(rcof_irri_nb, stat=max)
-## rcof_rain_nb = focal(rcof_harv[["rain"]], w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
-## rcof_rain_suit = rcof_rain_nb / cellStats(rcof_rain_nb, stat=max)
 
 ## ======================================
 ## group irrigated and rainfed crops into data frames by season
 ## ======================================
-
-## index of non-NA cells
-## cell_ix = which(!is.na(getValues(india_rgn)))
-## cell_ix = which(!is.na(getValues(rice_khar_irri)))
 
 myfun = function(..., na_ix, levels=c("total","irri","rain","rain_h","rain_l","rain_s"), season_nm, df=TRUE) {
     objs = list(...)
