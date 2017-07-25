@@ -122,21 +122,27 @@ Agricultural intensification - irrigation, fertiliser application and mechanizat
 
 Integrated Assessment Models have been developed ``to better understand interactions between natural and human systems and anticipate their co-evolution in the future'' \citep{le-page2016}. There is interest in coupling IAMs with environmental models. \citet{hejazi} developed a water demand module. \\
 
+\citet{le-page2016} developed a model to downscale predictions about land use and land cover change from the Global Change Assessment Model. The algorithm follows an ordered approach in which LULC types are spatially allocated in order according to their perceived relative economic value. This approach is common in land use change modelling \citet[e.g.][]{fuchs2013}. An important feature of the model is the ability for the user to set a target level of intensification versus expansion of agricultural land. This is an appropriate solution for various types of environmental change studies. The downscaling algorithm aggregated estimates of crop types into a single cropland class. However, it lacks the appropriate level of detail for assessing the impact of agricultural intensification on the water cycle \citep{}. \\
+
 There are few global datasets which show the current crop distribution. The Monthly Irrigated and Rainfed Crop Area (MIRCA2000) is one such dataset. An alternaitve dataset is provided by the MapSPAM \citep{}. This dataset disaggregates national and sub-national agricultural inventory data based primarily on biophysical suitability from FAO Global Agro-Ecological Zones database. \\
 
+This paper extends the model developed by \citet{le-page2016} to model the spatial distribution of individual crop types. 
+
 \section{Agriculture in Integrated Assessment Models}
-GCAM is comprehensively described elsewhere \citep[e.g.][]{}. This section describes 
+GCAM is comprehensively described elsewhere \citep[e.g.][]{}. This section describes the agricultural sub-model. 
 
 
 \subsection{Downscaling algorithm}
 Crop production can either be increased by expanding the land area used to grow the crop or a process of agricultural intensification. \\ 
 
+\subsection{Input data}
+TODO
 
 \subsection{Evaluation}
 Backcasting change in India?\\
 
 \subsection{Discussion}
-Points for discussion?\\
+The model follows an ordered approach which is computationally efficient but fails to represent competition between crop classes. A key assumption in the model is the order in which crops are allocated. \\
 
 \conclusions  %% \conclusions[modified heading if necessary]
 TEXT
