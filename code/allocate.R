@@ -27,7 +27,7 @@ init_area_mat =
     readRDS("data/mapspam_crop_area_df.rds") %>%
     filter(input %in% input_levels) %>%
     select(-(cell:input)) %>%
-    mutate_each(funs(replace(., is.na(.), 0))) %>%
+    mutate_all(funs(replace(., is.na(.), 0))) %>%
     as.matrix
 
 init_total_area_mat =
@@ -38,21 +38,21 @@ init_yield_mat =
     readRDS("data/mapspam_crop_yield_df.rds") %>%
     filter(input %in% input_levels) %>%
     select(-(cell:input)) %>%
-    mutate_each(funs(replace(., is.na(.), 0))) %>%
+    mutate_all(funs(replace(., is.na(.), 0))) %>%
     as.matrix
     
 init_nb_mat =
     readRDS("data/crop_neighb_df.rds") %>%
     filter(input %in% input_levels) %>%
     select(-(cell:input)) %>%
-    mutate_each(funs(replace(., is.na(.), 0))) %>%
+    mutate_all(funs(replace(., is.na(.), 0))) %>%
     as.matrix
 
 init_suit_mat =
     readRDS("data/crop_suit_df.rds") %>%
     filter(input %in% input_levels) %>%
     select(-(cell:input)) %>%
-    mutate_each(funs(replace(., is.na(.), 0))) %>%
+    mutate_all(funs(replace(., is.na(.), 0))) %>%
     as.matrix
     
 ## total suitability is the maximum of biophysical suitability from
