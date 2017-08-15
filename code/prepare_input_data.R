@@ -9,6 +9,8 @@ library(rgdal)
 library(ggplot2)
 options(stringsAsFactors = FALSE)
 
+source("code/helpers.R")
+
 suffix = "_eck4"
 
 ## ======================================
@@ -44,72 +46,6 @@ crop_area_2005 =
     `[`(cell_ix) %>% `*`(cell_area)
 
 saveRDS(crop_area_2005, "data/iiasa_cropland_area.rds")
-
-## ======================================
-## helper functions
-## ======================================
-
-get_mapspam_data = function(crop, path, what, suffix, ...) {
-    ## function to load MapSPAM data
-
-    what = tolower(what)
-    vars = c("yield","production","harvested_area","physical_area")
-    if (length(what) == 1 && what %in% vars) {
-        idx = which(vars %in% what)
-        ind = c("Y","P","H","A")[idx]
-    } else {
-        stop()
-    }
-    
-    out =
-        list(total=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TA_", toupper(crop), "_A", suffix, ".tif"))),
-             irri=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TI_", toupper(crop), "_I", suffix, ".tif"))),
-             rain=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TR_", toupper(crop), "_R", suffix, ".tif"))),
-             rain_h=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TH_", toupper(crop), "_H", suffix, ".tif"))),
-             rain_l=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TL_", toupper(crop), "_L", suffix, ".tif"))),
-             rain_s=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TS_", toupper(crop), "_S", suffix, ".tif"))))
-    out
-}
-
-get_gaez_suit_data = function(crop, path, suffix, ...) {
-
-    input_levels = c("h_suhi", ## high input, irrigated
-                     "i_suii", ## intermediate input, irrigated
-                     "h_suhr", ## high input, rainfed
-                     "i_suir", ## intermediate input, rainfed
-                     "l_sulr") ## low input, rainfed
-    out = list()
-    count = 0
-    for (i in 1:length(input_levels)) {
-        level = input_levels[i]
-        f = paste0("res03_crav6190", level, "_", crop, suffix, ".tif")
-        if (file.exists(file.path(path, f))) {
-            count = count + 1
-            r = raster(file.path(path, f))
-            out[[level]] = r
-        }
-    }
-    if (count == 0) {
-        stop("no files available for the supplied crop")
-    }
-    out
-}
-
-get_mapspam_neighb = function(x, ...) {
-    out = vector(mode="list", length=length(x))
-    for (i in 1:length(x)) {
-        xx = x[[i]]
-        if (isLonLat(xx)) {
-            ca = raster::area(xx) * 1000 * 1000 / 10000 ## km2 -> Ha
-        } else {
-            ca = res(xx)[1] * res(xx)[2] / 10000 ## m2 -> Ha
-        }
-        nb = focal(xx / ca, ...)
-        out[[i]] = nb
-    }
-    names(out) = names(x)
-    out
-}
 
 ## ======================================
 ## Crop area/suitability maps
@@ -1107,7 +1043,7 @@ yield_df =
     full_join(rabi_yield_df) %>%
     full_join(annual_yield_df) %>%
     select(cell, season, input, acof, bana, barl, bean, cass, chic, cnut, coco, cott, cowp, grou, lent, maiz, ocer, ofib, oilp, ooil, opul, orts, pige, plnt, pmil, pota, rape, rcof, rest, rice, sesa, smil, sorg, soyb, sugb, sugc, sunf, swpo, teas, temf, toba, trof, vege, whea, yams) %>%
-    mutate_each(funs(./1e3), -(cell:input)) %>% ## kg -> ton
+    mutate_at(vars(-(cell:input)), funs(./1e3)) %>%
     arrange(cell, season, input)
 
 ## save object
@@ -1175,8 +1111,8 @@ suit_df =
 
 suit_df =
     suit_df %>%
-    mutate_each(funs(replace(., .==-1, 0)), -(cell:input)) %>%
-    mutate_each(funs(./1e4), -(cell:input))
+    mutate_at(vars(-(cell:input)), funs(replace(., .==-1, 0))) %>%
+    mutate_at(vars(-(cell:input)), funs(./1e4))
     
 ## save object
 saveRDS(nb_df, "data/crop_neighb_df.rds")
@@ -1189,12 +1125,12 @@ saveRDS(suit_df, "data/crop_suit_df.rds")
 ## load GCAM data
 devtools::load_all("../GCAM/pkg/rgcam")
 
-db <- addScenario(dbFile="/scratch/projects/GCAM/v4.3/gcam-core/output/database_basexdb",
-                  proj="/scratch/projects/GCAM/data/output/proj_full.dat",
-                  queryFile="/scratch/projects/GCAM/sample-queries.xml", ## change this?
+db <- addScenario(dbFile="/home/simon/projects/GCAM/v4.3/gcam-core/output/database_basexdb",
+                  proj="/home/simon/projects/GCAM/data/output/proj_full.dat",
+                  queryFile="/home/simon/projects/GCAM/sample-queries.xml", ## change this?
                   clobber=TRUE)
 
-proj <- loadProject("/scratch/projects/GCAM/data/output/proj_full.dat")
+proj <- loadProject("/home/simon/projects/GCAM/data/output/proj_full.dat")
 listScenarios(proj)
 listQueries(proj)
     
@@ -1224,6 +1160,32 @@ gcam_prod %>%
 
 ## spread according to crop type
 gcam_prod %<>% spread(output, production)
+
+gcam_yield =
+    proj %>%
+    extract2("Reference") %>%
+    extract2("Yield") %>%
+    dplyr::select(-technology) %>%
+    gather(year, yield,
+           -scenario,
+           -region,
+           -sector,
+           -subsector,
+           -Units) %>%
+    group_by(scenario, region, sector, year) %>%
+    summarise_at(vars(-subsector, -Units), funs(sum(., na.rm=TRUE))) %>%
+    ungroup %>%
+    mutate(year = gsub("X", "", year)) %>%
+    mutate(year = as.numeric(year)) %>%
+    filter(!sector %in% c("biomass","biomassOil","FodderHerb","Pasture","UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
+    filter(region %in% "India") 
+    
+gcam_yield %>%
+    ggplot(aes(x=year, y=yield, colour=sector)) +
+    geom_line() +
+    labs(x="", y="Yield (?)") +
+    theme(legend.title=element_blank(), legend.position="bottom")+
+    guides(colour=guide_legend(ncol=3))
 
 ## calibrate GCAM data so that it matches MapSPAM in 2005
 
@@ -1371,7 +1333,7 @@ gcam_demand =
            Root_Tuber = Root_Tuber * root_sf,
            SugarCrop = SugarCrop * sugar_sf,
            Wheat = Wheat * wheat_sf) %>%
-    mutate_each(funs(.*1e6))            ## Mt -> t
+    mutate_all(funs(.*1e6))            ## Mt -> t
 
 dmd =
     data.frame(acof=gcam_demand[["MiscCrop"]] * misc_acof_frac,

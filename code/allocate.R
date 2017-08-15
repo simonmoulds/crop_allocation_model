@@ -8,6 +8,9 @@ library(Rcpp)
 library(RcppArmadillo)
 options(stringsAsFactors = FALSE)
 
+source("code/helpers.R")
+nbw = matrix(data=1, nrow=5, ncol=5)
+
 ## source("code/prepare_input_data.R")
 sourceCpp("code/allocate.cpp")
 
@@ -60,10 +63,30 @@ init_suit_mat =
 init_tsuit_mat =
     pmax(init_nb_mat, init_suit_mat)
 
+## ####################################################################
+
+## TODO: interpolate yield data
+
+## for now, just use linear regression with suitabiity
+
+nms = c("trof","bana","cnut","cass","ofib","ooil","swpo","teas","toba","rcof","acof","coco")
+for (i in 1:length(nms)) {
+
+    col_ix = which(colnames(init_yield_mat) %in% nms[i])    
+    for (j in 1:length(input_levels)) {
+        row_ix = seq(j, by=n_input, length.out=n_cell)
+        yield = init_yield_mat[row_ix,col_ix] %>% matrix(ncol=3, byrow=TRUE) %>% apply(1, max)
+        yield0 = yield
+        yield0 = mean(yield[yield > 0])
+        init_yield_mat[row_ix,col_ix] = rep(yield0, each=n_season)
+    }
+}
+
 dmd = readRDS("data/gcam_reference_demand.rds")
 
 ## model parameters
-alloc_order = c("rice","whea","maiz","sugc")
+alloc_order = c("sugc","rice","vege","whea","pota","trof","bana","maiz","cott","pmil","soyb","temf","cnut","sorg","rape","cass","grou","chic","bean","pige","ofib","smil","opul","ooil","sunf","barl","swpo","lent","teas","sesa","rest","toba","rcof","acof","coco","orts","ocer","plnt","cowp","oilp","sugb","yams")
+
 fact = 0.01 ## this value controls how much change is made in each cell
 rand_min = 0
 rand_max = 0.25
@@ -78,6 +101,8 @@ total_area_mat = init_total_area_mat
 yield_mat = init_yield_mat
 nb_mat = init_nb_mat
 suit_mat = init_suit_mat
+
+time = time[1:2]
 
 for (i in 2:length(time)) {    
 
@@ -111,7 +136,7 @@ for (i in 2:length(time)) {
 
     ## first, allocate crops with increasing demand
     for (j in 1:length(alloc_order)) {
-        crop = alloc_order[j]
+        crop = alloc_order[j]; print(crop)
         if (crop %in% incr_crops) {
             crop_ix = crop_nms %in% crop
 
@@ -195,7 +220,7 @@ for (i in 2:length(time)) {
                                 toupper(input_levels[m]), "_",
                                 time[i], ".tif")
                     
-                    writeRaster(r, file.path(out_path, fn), format="GTiff", overwrite=TRUE)
+                    ## writeRaster(r, file.path(out_path, fn), format="GTiff", overwrite=TRUE)
                 }
             }
         }
