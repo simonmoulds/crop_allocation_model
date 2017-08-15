@@ -12,8 +12,6 @@
 %% 2-column papers and discussion papers
 \documentclass[gmd, manuscript]{copernicus}
 
-
-
 %% Journal abbreviations (please use the same for discussion papers and final revised papers)
 
 % Archives Animal Breeding (aab)
@@ -110,7 +108,7 @@
 
 
 \begin{abstract}
-Integrated Assessment Models typically simulate the crop production. 
+The Global Change Assessment Model, an integrated assessment model, provides insight into the the interactions and feedbacks between physical and human systems. It is used extensively to simulate the response of terrestrial systems to exogenous factors such as population growth, technological improvements and economic and environmental policies. Output from the land system component of GCAM, which simulates land use activities and the production of major crops, is at the subregional level and must be spatially downscaled in order to use with gridded impact assessment models. However, existing downscaling routines typically consider cropland as a homogeneous class and do not provide information about land use intensity or specific management practices such as irrigation and multiple cropping. This paper presents a spatial allocation model to downscale crop production data from GCAM to a spatial grid, producing a time series of maps which show the spatial distribution of specific crops (e.g. rice, wheat, maize) at four input levels (subsistence, low input rainfed, high input rainfed and high input irrigated). The model algorithm is constrained by available cropland at each time point and therefore implicitly balances extensification and intensification processes in order to meet global food demand. It utilises a stochastic approach such that an increase in production of a particular crop is more likely to occur in grid cells with a high biophysical suitability and neighbourhood influence, whereas a fall in regional production will translate to reduced area in cells with lower suitability. User-supplied rules define the order in which specific crops are downscaled as well as allowable transitions. A regional case study demonstrates the ability of the model to predict the spatial distribution of crops in India under different GCAM scenarios. Lastly, the ability of the model to reproduce historical trends in India is evaluated by comparing the model output with district-level agricultural inventory data. 
 \end{abstract}
 
 
@@ -120,29 +118,40 @@ Integrated Assessment Models typically simulate the crop production.
 \introduction  %% \introduction[modified heading if necessary]
 Agricultural intensification - irrigation, fertiliser application and mechanization will play an important role. Agricultural intensification has a substantial environmental impact. \\
 
-Integrated Assessment Models have been developed ``to better understand interactions between natural and human systems and anticipate their co-evolution in the future'' \citep{le-page2016}. There is interest in coupling IAMs with environmental models. \citet{hejazi} developed a water demand module. \\
+Integrated Assessment Models have been developed ``to better understand interactions between natural and human systems and anticipate their co-evolution in the future'' \citep{le-page2016}. There is interest in coupling IAMs with environmental models. \citet{hejazi} developed a water demand module. Integrated assessment models typically operate at the regional to subregional level \citep{}. In contrast, Earth system models, which are used to perform environmental change assessments, typically operate over a spatial grid at resolution below 0.5 degrees \citep{}. Coupling these two classes of models is recognised as an important technical challenge \citep{}. \citet{hurtt2001} developed a spatial downscaling procedure for the IPCC 5th Assessment Report. \citet{le-page2016} developed a model to downscale predictions about land use and land cover change from the Global Change Assessment Model. The algorithm follows an ordered approach in which LULC types are spatially allocated in order according to their perceived relative economic value. This approach is common in land use change modelling \citet[e.g.][]{fuchs2013}. \\
 
-\citet{le-page2016} developed a model to downscale predictions about land use and land cover change from the Global Change Assessment Model. The algorithm follows an ordered approach in which LULC types are spatially allocated in order according to their perceived relative economic value. This approach is common in land use change modelling \citet[e.g.][]{fuchs2013}. An important feature of the model is the ability for the user to set a target level of intensification versus expansion of agricultural land. This is an appropriate solution for various types of environmental change studies. The downscaling algorithm aggregated estimates of crop types into a single cropland class. However, it lacks the appropriate level of detail for assessing the impact of agricultural intensification on the water cycle \citep{}. \\
+An important feature of the model is the ability for the user to set a target level of intensification versus expansion of agricultural land. This is an appropriate solution for various types of environmental change studies. The downscaling algorithm aggregated estimates of crop types into a single cropland class. However, it lacks the appropriate level of detail for assessing the impact of agricultural intensification on the water cycle \citep{}. \\
 
-There are few global datasets which show the current crop distribution. The Monthly Irrigated and Rainfed Crop Area (MIRCA2000) is one such dataset. An alternaitve dataset is provided by the MapSPAM \citep{}. This dataset disaggregates national and sub-national agricultural inventory data based primarily on biophysical suitability from FAO Global Agro-Ecological Zones database. \\
+Mapping the distribution of specific crops at regional and global level is challenging \citep{}. Remote sensing has resulted in a several regional and global land use/land cover datasets. These maps either divide cropland into rainfed and irrigated components \citep{} or treat copland as a homogeneous class \citep{}. The Global Irrigated Area Map (GIAM) attempted to differentiate specific crops... but a large proportion of the resulting categories are mixed classes, due to similarities in the spectral signature of various crops. The GRIPC dataset shows the global distribution of rice \citep{}. There are few global datasets which show the current crop distribution. One of the first attempts to do so is presented in \citet{monfreda2008}, which shows the area of 175 crop types. However, it has numerous problems from the point of view of modelling. The Monthly Irrigated and Rainfed Crop Area (MIRCA2000) is one such dataset. An alternaitve dataset is provided by MapSPAM \citep{}. This dataset disaggregates national and sub-national agricultural inventory data based primarily on biophysical suitability from FAO Global Agro-Ecological Zones database. The dataset differentiates between various levels of input. \\
 
-This paper extends the model developed by \citet{le-page2016} to model the spatial distribution of individual crop types. 
+\citet{le-page2016} now disaggregates 
+This paper extends the model developed by \citet{le-page2016} to model the spatial distribution of individual crop types at four input levels. 
 
 \section{Agriculture in Integrated Assessment Models}
-GCAM is comprehensively described elsewhere \citep[e.g.][]{}. This section describes the agricultural sub-model. 
+GCAM is comprehensively described elsewhere \citep[e.g.][]{}. A summary of the land system component of GCAM is provided here for the sake of completeness. Cropland is divided into three specific crop types (Rice, Wheat, Maize) and X aggregated crop classes (other cereals, sugar crops, oil crops, miscellaneous crops...). 
 
-
-\subsection{Downscaling algorithm}
+\section{Downscaling algorithm}
 Crop production can either be increased by expanding the land area used to grow the crop or a process of agricultural intensification. \\ 
 
-\subsection{Input data}
-TODO
+The first task is to obtain the area of cropland in a given time point. This is obtained from the GCAM land use downscaling algorithm \citep{}. This approach handles competition between cropland and other forms of agricultural land. However, it fails to differentiate between cropland that is used to grow crops for food and that which is used to grow biofuels. \\
 
-\subsection{Evaluation}
-Backcasting change in India?\\
+In the following subsections we describe the approaches used to incorporate various cropping practices. \\
+
+\subsection{Intercropping}
+Intercropping is the practice of growing two or more crops simultaneously in the same field \citep{}. In the model, the user specifies for each crop and for each region whether or not a crop is intercropped and a list of crops with which it is typically intercropped. In addition, the user must supply a factor representing the yield reduction from normal conditions (i.e. when the crop is grown as a single crop). \\
+
+\subsection{Input data}
+The data requirements of the crop allocation model are considerable. The principal model input is the crop production and yield values from the GCAM simulation. The initial condition is provided by the MapSPAM product; a state-of-the-art dataset which shows the spatial distribution of 42 crops around the year 2005. Yield maps, also from MapSPAM, translate crop production in each cell to crop area. Biophysical suitability, which influences the likelihood that a crop will be grown in a particular cell, were retrieved from the FAO GAEZ dataset \citep{}. Agro-climatically attainable yield, from FAO GAEZ, defines the maximum yield that could be attained given prevailing climatic conditions \citep{}. \\
+
+\subsection{Model evaluation}
+District-level inventory data for India was obtained from various sources. Districts in India are large relative to the size of a 5 arcminute grid cell. Nevertheless, they have sufficient spatial granularity to be able to identify key trends in crop distribution since the middle of the twentieth century.
 
 \subsection{Discussion}
 The model follows an ordered approach which is computationally efficient but fails to represent competition between crop classes. A key assumption in the model is the order in which crops are allocated. \\
+
+The spatial allocation procedure has a number of important limitations. Water available for irrigation is not currently considered. Interannual variability in rainfall, which influences crop production from rainfed areas as well irrigation supply, is not considered in integrated assessment models. There is considerable uncertainty about the change in weather systems which are regionally important to agriculture. The South Asian monsoon, which supplies up to 80\% of India's water resources \citep{}, is one such system. As work progress on downscaling output from integrated assessment models, it becomes apparent that many endogeneous processes should be modelled in in a spatially explicit way. \\
+
+According to \citet{nazemi2014} a lack of datasets showing irrigated area has limited regional scale assessments of water resources. The spatial allocation procedure outlined here aims to address this research gap. \\
 
 \conclusions  %% \conclusions[modified heading if necessary]
 TEXT
