@@ -3,6 +3,46 @@
 
 ## helper functions
 
+interpolate_yield = function(yield, suit, ...) {
+    ## Function to interpolate yield values to cells where MapSPAM
+    ## yield data is not available but for which suitability values
+    ## exist
+    ##
+    ## Args:
+    ##   x : yield maps (list)
+    ##   y : suitability maps (list)
+    ##
+    ## Return:
+    ##   List containing updated yield maps
+
+    input_levels = c("irri","rain_h","rain_l","rain_s")
+    for (i in 1:length(input_levels)) {
+        level = input_levels[[i]]
+        x = yield[[level]]
+        y = suit[[level]] ## not used!!!!!
+
+        if (cellStats(x, stat=max) == 0) {
+            idw = x
+        } else {
+            
+            x[x == 0] = NA
+            spdf = as(x, "SpatialPointsDataFrame") %>% setNames("yield")
+            gs = gstat(formula=yield~1, data=spdf)
+            idw <- interpolate(x, gs)
+
+            idw[!is.na(x)] = x[!is.na(x)]
+            ## idw[y <= 0 | is.na(y)] = 0
+        }
+        
+        yield[[level]] = idw
+    }
+
+    ## NB 'total' and 'rain' are the mean yield, weighted according to
+    ## harvested area
+
+    yield
+}
+
 get_mapspam_data = function(crop, path, what, suffix, ...) {
     ## function to load MapSPAM data
 
@@ -53,12 +93,14 @@ get_mapspam_neighb = function(x, ...) {
     out = vector(mode="list", length=length(x))
     for (i in 1:length(x)) {
         xx = x[[i]]
-        if (isLonLat(xx)) {
-            ca = raster::area(xx) * 1000 * 1000 / 10000 ## km2 -> Ha
-        } else {
-            ca = res(xx)[1] * res(xx)[2] / 10000 ## m2 -> Ha
-        }
-        nb = focal(xx / ca, ...)
+        ## if (isLonLat(xx)) {
+        ##     ca = raster::area(xx) * 1000 * 1000 / 10000 ## km2 -> Ha
+        ## } else {
+        ##     ca = res(xx)[1] * res(xx)[2] / 10000 ## m2 -> Ha
+        ## }
+        ## nb = focal(xx / ca, ...)
+        xx[xx > 0] = 1
+        nb = focal(xx, ...)
         out[[i]] = nb
     }
     names(out) = names(x)

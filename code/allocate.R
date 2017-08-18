@@ -63,25 +63,6 @@ init_suit_mat =
 init_tsuit_mat =
     pmax(init_nb_mat, init_suit_mat)
 
-## ####################################################################
-
-## TODO: interpolate yield data
-
-## for now, just use linear regression with suitabiity
-
-nms = c("trof","bana","cnut","cass","ofib","ooil","swpo","teas","toba","rcof","acof","coco")
-for (i in 1:length(nms)) {
-
-    col_ix = which(colnames(init_yield_mat) %in% nms[i])    
-    for (j in 1:length(input_levels)) {
-        row_ix = seq(j, by=n_input, length.out=n_cell)
-        yield = init_yield_mat[row_ix,col_ix] %>% matrix(ncol=3, byrow=TRUE) %>% apply(1, max)
-        yield0 = yield
-        yield0 = mean(yield[yield > 0])
-        init_yield_mat[row_ix,col_ix] = rep(yield0, each=n_season)
-    }
-}
-
 dmd = readRDS("data/gcam_reference_demand.rds")
 
 ## model parameters
@@ -102,7 +83,7 @@ yield_mat = init_yield_mat
 nb_mat = init_nb_mat
 suit_mat = init_suit_mat
 
-time = time[1:2]
+time = time[1:3]
 
 for (i in 2:length(time)) {    
 

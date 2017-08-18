@@ -7,6 +7,7 @@ library(tidyr)
 library(dplyr)
 library(rgdal)
 library(ggplot2)
+library(gstat)
 options(stringsAsFactors = FALSE)
 
 source("code/helpers.R")
@@ -80,6 +81,9 @@ rice_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 
+print("interpolating rice yield...")
+rice_yield = interpolate_yield(rice_yield, rice_suit)
+
 rice_khar_phys = list(irri=rice_harv[["irri"]] - rice_phys[["irri"]],
                       rain=rice_phys[["rain"]],
                       rain_h=rice_phys[["rain_h"]],
@@ -113,6 +117,9 @@ barl_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 barl_nb = get_mapspam_neighb(barl_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating barley yield...")
+barl_yield = interpolate_yield(barl_yield, barl_suit)
+
 ## maize
 maiz_phys =
     get_mapspam_data("maiz", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -132,6 +139,9 @@ maiz_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 maiz_nb = get_mapspam_neighb(maiz_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating maize yield...")
+maiz_yield = interpolate_yield(maiz_yield, maiz_suit)
 
 ## millet
 pmil_phys =
@@ -153,6 +163,9 @@ pmil_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 pmil_nb = get_mapspam_neighb(pmil_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating pearl millet yield...")
+pmil_yield = interpolate_yield(pmil_yield, pmil_suit)
+
 smil_phys =
     get_mapspam_data("smil", mapspam_path, "physical_area", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
@@ -171,6 +184,9 @@ smil_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 smil_nb = get_mapspam_neighb(smil_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating finger millet yield...")
+smil_yield = interpolate_yield(smil_yield, smil_suit)
 
 ## sorghum
 sorg_phys =
@@ -191,6 +207,9 @@ sorg_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sorg_nb = get_mapspam_neighb(sorg_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating sorghum yield...")
+sorg_yield = interpolate_yield(sorg_yield, sorg_suit)
 
 ## other cereal
 ocer_phys =
@@ -213,6 +232,9 @@ ocer_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 ocer_nb = get_mapspam_neighb(ocer_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating other cereals yield...")
+ocer_yield = interpolate_yield(ocer_yield, ocer_suit)
+
 ## soybean
 soyb_phys =
     get_mapspam_data("soyb", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -233,6 +255,9 @@ soyb_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 soyb_nb = get_mapspam_neighb(soyb_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating soybean yield...")
+soyb_yield = interpolate_yield(soyb_yield, soyb_suit)
+
 ## groundnut
 grou_phys =
     get_mapspam_data("grou", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -252,6 +277,9 @@ grou_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 grou_nb = get_mapspam_neighb(grou_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating groundnut yield...")
+grou_yield = interpolate_yield(grou_yield, grou_suit)
 
 ## sesameseed
 sesa_phys =
@@ -274,6 +302,9 @@ sesa_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sesa_nb = get_mapspam_neighb(sesa_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating sesameseed yield...")
+sesa_yield = interpolate_yield(sesa_yield, sesa_suit)
+
 ## sunflower
 sunf_phys =
     get_mapspam_data("sunf", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -294,6 +325,9 @@ sunf_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sunf_nb = get_mapspam_neighb(sunf_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating sunflower yield...")
+sunf_yield = interpolate_yield(sunf_yield, sunf_suit)
+
 ## otheroils
 ooil_phys =
     get_mapspam_data("ooil", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -307,13 +341,27 @@ ooil_yield =
     get_mapspam_data("ooil", mapspam_path, "yield", suffix=suffix) %>%
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
 
-## NB other oil suitability based on olive oil
-ooil_suit =
-    get_gaez_suit_data("olv", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
-    `[`(c(1,1,3,3,4,4)) %>%
-    setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
-ooil_nb = get_mapspam_neighb(ooil_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+ooil_yield[["rain_h"]] = ooil_yield[["rain_l"]]
+
+## ## NB other oil suitability based on olive oil
+## ooil_suit =
+##     get_gaez_suit_data("olv", gaez_path, suffix=suffix) %>%
+##     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+##     `[`(c(1,1,3,3,4,4)) %>%
+##     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
+ooil_harv[["rain_h"]] = ooil_harv[["rain_l"]]
+ooil_harv[["rain_l"]] = ooil_harv[["rain_s"]]
+ooil_harv[["rain_s"]] = setValues(raster(ooil_harv[["rain_s"]]), 0) * india_rgn
+
+ooil_yield[["rain_h"]] = ooil_yield[["rain_l"]]
+ooil_yield[["rain_l"]] = ooil_yield[["rain_s"]]
+
+ooil_nb = get_mapspam_neighb(ooil_harv, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+## ooil_suit = lapply(ooil_nb, FUN=function(x) setValues(x, 0) * india_rgn)
+ooil_suit = ooil_nb
+
+print("interpolating other oilseeds yield...")
+ooil_yield = interpolate_yield(ooil_yield, ooil_suit)
 
 ## potato
 pota_phys =
@@ -335,6 +383,9 @@ pota_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 pota_nb = get_mapspam_neighb(pota_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating potato yield...")
+pota_yield = interpolate_yield(pota_yield, pota_suit)
+
 ## sweetpotato
 swpo_phys =
     get_mapspam_data("swpo", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -354,6 +405,9 @@ swpo_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 swpo_nb = get_mapspam_neighb(swpo_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating sweet potato yield...")
+swpo_yield = interpolate_yield(swpo_yield, swpo_suit)
 
 ## cotton
 cott_phys =
@@ -375,6 +429,9 @@ cott_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 cott_nb = get_mapspam_neighb(cott_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating cotton yield...")
+cott_yield = interpolate_yield(cott_yield, cott_suit)
+
 ## other fibre
 ofib_phys =
     get_mapspam_data("ofib", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -394,6 +451,9 @@ ofib_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 ofib_nb = get_mapspam_neighb(ofib_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating other fibres yield...")
+ofib_yield = interpolate_yield(ofib_yield, ofib_suit)
 
 ## tobacco
 toba_phys =
@@ -415,6 +475,9 @@ toba_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 toba_nb = get_mapspam_neighb(toba_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating tobacco yield...")
+toba_yield = interpolate_yield(toba_yield, toba_suit)
+
 ## rest of crops
 rest_phys =
     get_mapspam_data("rest", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -434,6 +497,9 @@ rest_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 rest_nb = get_mapspam_neighb(rest_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating rest of crops yield...")
+rest_yield = interpolate_yield(rest_yield, rest_suit)
 
 ## rabi crops
 
@@ -474,6 +540,9 @@ whea_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 whea_nb = get_mapspam_neighb(whea_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating wheat yield...")
+whea_yield = interpolate_yield(whea_yield, whea_suit)
+
 ## vegetables
 vege_phys =
     get_mapspam_data("vege", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -493,6 +562,9 @@ vege_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 vege_nb = get_mapspam_neighb(vege_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating vegetables yield...")
+vege_yield = interpolate_yield(vege_yield, vege_suit)
 
 ## rapeseed
 rape_phys =
@@ -514,6 +586,9 @@ rape_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 rape_nb = get_mapspam_neighb(rape_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating rapeseed yield...")
+rape_yield = interpolate_yield(rape_yield, rape_suit)
+
 ## pulses (NB cowpea not present in India according to MapSPAM)
 bean_phys =
     get_mapspam_data("bean", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -533,6 +608,9 @@ bean_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 bean_nb = get_mapspam_neighb(bean_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating bean yield...")
+bean_yield = interpolate_yield(bean_yield, bean_suit)
 
 ## chickpea
 chic_phys =
@@ -554,6 +632,9 @@ chic_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 chic_nb = get_mapspam_neighb(chic_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating chickpea yield...")
+chic_yield = interpolate_yield(chic_yield, chic_suit)
+
 ## pigeon pea
 pige_phys =
     get_mapspam_data("pige", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -573,6 +654,9 @@ pige_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 pige_nb = get_mapspam_neighb(pige_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating pigeonpea yield...")
+pige_yield = interpolate_yield(pige_yield, pige_suit)
 
 ## cowpea
 cowp_phys =
@@ -594,6 +678,9 @@ cowp_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 cowp_nb = get_mapspam_neighb(cowp_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating cowpea yield...")
+cowp_yield = interpolate_yield(cowp_yield, cowp_suit)
+
 ## lentil
 lent_phys =
     get_mapspam_data("lent", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -614,6 +701,9 @@ lent_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 lent_nb = get_mapspam_neighb(lent_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating lentil yield...")
+lent_yield = interpolate_yield(lent_yield, lent_suit)
+
 ## other pulses
 opul_phys =
     get_mapspam_data("opul", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -633,6 +723,9 @@ opul_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 opul_nb = get_mapspam_neighb(opul_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating other pulses yield...")
+opul_yield = interpolate_yield(opul_yield, opul_suit)
 
 ## annual crops
 
@@ -656,6 +749,9 @@ sugc_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sugc_nb = get_mapspam_neighb(sugc_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating sugarcane yield...")
+sugc_yield = interpolate_yield(sugc_yield, sugc_suit)
+
 ## sugar beet (not grown in India - included for completeness)
 sugb_phys =
     get_mapspam_data("sugb", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -676,6 +772,9 @@ sugb_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sugb_nb = get_mapspam_neighb(sugb_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating sugarbeet yield...")
+sugb_yield = interpolate_yield(sugb_yield, sugb_suit)
+
 ## coconut
 cnut_phys =
     get_mapspam_data("cnut", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -694,7 +793,20 @@ cnut_suit =
     lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
-cnut_nb = get_mapspam_neighb(cnut_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+cnut_harv[["rain_h"]] = cnut_harv[["rain_l"]]
+cnut_harv[["rain_l"]] = cnut_harv[["rain_s"]]
+cnut_harv[["rain_s"]] = setValues(raster(cnut_harv[["rain_s"]]), 0) * india_rgn
+
+cnut_yield[["rain_h"]] = cnut_yield[["rain_l"]]
+cnut_yield[["rain_l"]] = cnut_yield[["rain_s"]]
+
+cnut_nb = get_mapspam_neighb(cnut_harv, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating coconut yield...")
+cnut_yield = interpolate_yield(cnut_yield, cnut_nb)
+
+cnut_yield[["irri"]] = cnut_yield[["rain"]] * 1.5
 
 ## oil palm (not grown in India - included for completeness)
 oilp_phys =
@@ -716,6 +828,9 @@ oilp_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 oilp_nb = get_mapspam_neighb(oilp_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating oilpalm yield...")
+oilp_yield = interpolate_yield(oilp_yield, oilp_suit)
+
 ## tropical fruit
 trof_phys =
     get_mapspam_data("trof", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -735,6 +850,9 @@ trof_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 trof_nb = get_mapspam_neighb(trof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating tropical fruit yield...")
+trof_yield = interpolate_yield(trof_yield, trof_suit)
 
 ## temperate fruit
 temf_phys =
@@ -757,6 +875,9 @@ temf_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 temf_nb = get_mapspam_neighb(temf_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating temperate fruit yield...")
+temf_yield = interpolate_yield(temf_yield, temf_suit)
+
 ## banana
 bana_phys =
     get_mapspam_data("bana", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -776,6 +897,9 @@ bana_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 bana_nb = get_mapspam_neighb(bana_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating banana yield...")
+bana_yield = interpolate_yield(bana_yield, bana_suit)
 
 ## plantain
 plnt_phys =
@@ -798,6 +922,9 @@ plnt_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 plnt_nb = get_mapspam_neighb(plnt_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating plantain yield...")
+plnt_yield = interpolate_yield(plnt_yield, plnt_suit)
+
 ## cassava
 cass_phys =
     get_mapspam_data("cass", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -819,6 +946,9 @@ cass_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 cass_nb = get_mapspam_neighb(cass_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating cassava yield...")
+cass_yield = interpolate_yield(cass_yield, cass_suit)
+
 ## yams
 yams_phys =
     get_mapspam_data("yams", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -839,6 +969,9 @@ yams_suit =
     ## `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 yams_nb = get_mapspam_neighb(yams_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating yams yield...")
+yams_yield = interpolate_yield(yams_yield, yams_suit)
 
 ## other roots
 orts_phys =
@@ -862,6 +995,9 @@ orts_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 orts_nb = get_mapspam_neighb(orts_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating other roots yield...")
+orts_yield = interpolate_yield(orts_yield, orts_suit)
+
 ## cocoa
 coco_phys =
     get_mapspam_data("coco", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -881,6 +1017,9 @@ coco_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 coco_nb = get_mapspam_neighb(coco_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating cocoa yield...")
+coco_yield = interpolate_yield(coco_yield, coco_suit)
 
 ## tea
 teas_phys =
@@ -902,6 +1041,9 @@ teas_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 teas_nb = get_mapspam_neighb(teas_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating tea yield...")
+teas_yield = interpolate_yield(teas_yield, teas_suit)
+
 ## arabica coffee
 acof_phys =
     get_mapspam_data("acof", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -922,6 +1064,9 @@ acof_suit =
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 acof_nb = get_mapspam_neighb(acof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 
+print("interpolating arabica coffee yield...")
+acof_yield = interpolate_yield(acof_yield, acof_suit)
+
 ## robusta coffee
 rcof_phys =
     get_mapspam_data("rcof", mapspam_path, "physical_area", suffix=suffix) %>%
@@ -941,6 +1086,9 @@ rcof_suit =
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 rcof_nb = get_mapspam_neighb(rcof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
+
+print("interpolating robusta coffee yield...")
+rcof_yield = interpolate_yield(rcof_yield, rcof_suit)
 
 ## ======================================
 ## group irrigated and rainfed crops into data frames by season
@@ -1133,7 +1281,16 @@ db <- addScenario(dbFile="/home/simon/projects/GCAM/v4.3/gcam-core/output/databa
 proj <- loadProject("/home/simon/projects/GCAM/data/output/proj_full.dat")
 listScenarios(proj)
 listQueries(proj)
-    
+
+gcam_land =
+    proj %>%
+    extract2("Reference") %>%
+    extract2("Land Allocation")
+## gcam_bio =
+##     proj %>%
+##     extract2("Reference") %>%
+##     extract2("Primary energy with CCS (Direct Equivalent)")     
+
 ## get agricultural production from GCAM reference scenario
 gcam_prod =
     proj %>%
@@ -1148,7 +1305,8 @@ gcam_prod =
     dplyr::select(-sector) %>%
     mutate(year = gsub("X", "", year)) %>%
     mutate(year = as.numeric(year)) %>%
-    filter(!output %in% c("biomass","UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
+    filter(!output %in% c("UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
+    ## filter(!output %in% c("biomass","UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
     filter(region %in% "India") 
 
 gcam_prod %>%
