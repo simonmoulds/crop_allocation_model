@@ -12,13 +12,17 @@ options(stringsAsFactors = FALSE)
 
 source("code/helpers.R")
 
-suffix = "_eck4"
+## suffix = "_eck4"
+suffix = "_ll"
+fact = 5
 
 ## ======================================
 ## india region map
 ## ======================================
 
-india_rgn = raster(file.path("data", paste0("gcam_32rgn_rast", suffix, ".tif")))
+india_rgn =
+    raster(file.path("data", paste0("gcam_32rgn_rast", suffix, ".tif"))) %>%
+    { if (fact > 1) raster::aggregate(x=., fact=fact, fun=modal) else .}
 india_rgn[india_rgn != 17] = NA
 india_rgn %<>% trim
 india_rgn[!is.na(india_rgn)] = 1
@@ -27,7 +31,7 @@ india_ext = extent(india_rgn)
 cell_ix = which(!is.na(getValues(india_rgn)))
 
 if (isLonLat(india_rgn)) {
-    cell_area = getValues(area(india_rgn)) * 1000 * 1000 / 10000 %>% `[`(cell_ix)
+    cell_area = (getValues(area(india_rgn)) * 1000 * 1000 / 10000) %>% `[`(cell_ix)
 } else {
     cell_area = rep(res(india_rgn)[1] * res(india_rgn)[2] / 10000, length(cell_ix))
 }
@@ -43,6 +47,7 @@ saveRDS(cell_ix, "data/india_rgn_cell_ix.rds")
 crop_area_2005 =
     raster(file.path("data", paste0("iiasa-ifpri-cropland-map/iiasa_ifpri_cropland_map_5m", suffix, ".tif"))) %>%
     crop(india_ext) %>%
+    { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>%
     getValues(.) %>%
     `[`(cell_ix) %>% `*`(cell_area)
 
@@ -63,21 +68,21 @@ nbw = matrix(data=1, nrow=5, ncol=5)
 ## rice
 rice_phys =
     get_mapspam_data("rice", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rice_harv =
     get_mapspam_data("rice", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rice_yield =
     get_mapspam_data("rice", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
     
 rice_suit_w = get_gaez_suit_data("rcw", gaez_path, suffix=suffix)
 rice_suit_d = get_gaez_suit_data("rcd", gaez_path, suffix=suffix)
 rice_suit =
     c(rice_suit_w[1:2], rice_suit_d[1:3]) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 
@@ -100,19 +105,19 @@ rice_khar_nb = get_mapspam_neighb(rice_khar_phys, w=nbw, fun=mean, na.rm=TRUE, p
 ## barley
 barl_phys =
     get_mapspam_data("barl", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 barl_harv =
     get_mapspam_data("barl", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 barl_yield =
     get_mapspam_data("barl", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 barl_suit =
     get_gaez_suit_data("brl", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 barl_nb = get_mapspam_neighb(barl_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -123,19 +128,19 @@ barl_yield = interpolate_yield(barl_yield, barl_suit)
 ## maize
 maiz_phys =
     get_mapspam_data("maiz", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 maiz_harv =
     get_mapspam_data("maiz", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 maiz_yield =
     get_mapspam_data("maiz", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 maiz_suit =
     get_gaez_suit_data("mze", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 maiz_nb = get_mapspam_neighb(maiz_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -146,19 +151,19 @@ maiz_yield = interpolate_yield(maiz_yield, maiz_suit)
 ## millet
 pmil_phys =
     get_mapspam_data("pmil", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 pmil_harv =
     get_mapspam_data("pmil", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 pmil_yield =
     get_mapspam_data("pmil", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 pmil_suit =
     get_gaez_suit_data("pml", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 pmil_nb = get_mapspam_neighb(pmil_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -168,19 +173,19 @@ pmil_yield = interpolate_yield(pmil_yield, pmil_suit)
 
 smil_phys =
     get_mapspam_data("smil", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 smil_harv =
     get_mapspam_data("smil", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 smil_yield =
     get_mapspam_data("smil", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
     
 smil_suit =
     get_gaez_suit_data("fml", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 smil_nb = get_mapspam_neighb(smil_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -191,19 +196,19 @@ smil_yield = interpolate_yield(smil_yield, smil_suit)
 ## sorghum
 sorg_phys =
     get_mapspam_data("sorg", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sorg_harv =
     get_mapspam_data("sorg", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sorg_yield =
     get_mapspam_data("sorg", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sorg_suit =
     get_gaez_suit_data("srg", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sorg_nb = get_mapspam_neighb(sorg_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -214,20 +219,20 @@ sorg_yield = interpolate_yield(sorg_yield, sorg_suit)
 ## other cereal
 ocer_phys =
     get_mapspam_data("ocer", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ocer_harv =
     get_mapspam_data("ocer", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ocer_yield =
     get_mapspam_data("ocer", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB suitability based on oat
 ocer_suit =
     get_gaez_suit_data("oat", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 ocer_nb = get_mapspam_neighb(ocer_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -238,19 +243,19 @@ ocer_yield = interpolate_yield(ocer_yield, ocer_suit)
 ## soybean
 soyb_phys =
     get_mapspam_data("soyb", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 soyb_harv =
     get_mapspam_data("soyb", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 soyb_yield =
     get_mapspam_data("soyb", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 soyb_suit =
     get_gaez_suit_data("soy", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 soyb_nb = get_mapspam_neighb(soyb_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -261,19 +266,19 @@ soyb_yield = interpolate_yield(soyb_yield, soyb_suit)
 ## groundnut
 grou_phys =
     get_mapspam_data("grou", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 grou_harv =
     get_mapspam_data("grou", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 grou_yield =
     get_mapspam_data("grou", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 grou_suit =
     get_gaez_suit_data("grd", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 grou_nb = get_mapspam_neighb(grou_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -284,20 +289,20 @@ grou_yield = interpolate_yield(grou_yield, grou_suit)
 ## sesameseed
 sesa_phys =
     get_mapspam_data("sesa", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sesa_harv =
     get_mapspam_data("sesa", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sesa_yield =
     get_mapspam_data("sesa", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB: suitability based on rapeseed
 sesa_suit =
     get_gaez_suit_data("rsd", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sesa_nb = get_mapspam_neighb(sesa_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -308,19 +313,19 @@ sesa_yield = interpolate_yield(sesa_yield, sesa_suit)
 ## sunflower
 sunf_phys =
     get_mapspam_data("sunf", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sunf_harv =
     get_mapspam_data("sunf", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sunf_yield =
     get_mapspam_data("sunf", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sunf_suit =
     get_gaez_suit_data("sfl", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sunf_nb = get_mapspam_neighb(sunf_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -331,15 +336,15 @@ sunf_yield = interpolate_yield(sunf_yield, sunf_suit)
 ## otheroils
 ooil_phys =
     get_mapspam_data("ooil", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ooil_harv =
     get_mapspam_data("ooil", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ooil_yield =
     get_mapspam_data("ooil", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ooil_yield[["rain_h"]] = ooil_yield[["rain_l"]]
 
@@ -366,19 +371,19 @@ ooil_yield = interpolate_yield(ooil_yield, ooil_suit)
 ## potato
 pota_phys =
     get_mapspam_data("pota", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 pota_harv =
     get_mapspam_data("pota", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 pota_yield =
     get_mapspam_data("pota", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 pota_suit =
     get_gaez_suit_data("wpo", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 pota_nb = get_mapspam_neighb(pota_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -389,19 +394,19 @@ pota_yield = interpolate_yield(pota_yield, pota_suit)
 ## sweetpotato
 swpo_phys =
     get_mapspam_data("swpo", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 swpo_harv =
     get_mapspam_data("swpo", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 swpo_yield =
     get_mapspam_data("swpo", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 swpo_suit =
     get_gaez_suit_data("spo", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 swpo_nb = get_mapspam_neighb(swpo_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -412,19 +417,19 @@ swpo_yield = interpolate_yield(swpo_yield, swpo_suit)
 ## cotton
 cott_phys =
     get_mapspam_data("cott", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cott_harv =
     get_mapspam_data("cott", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cott_yield =
     get_mapspam_data("cott", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cott_suit =
     get_gaez_suit_data("cot", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 cott_nb = get_mapspam_neighb(cott_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -435,19 +440,19 @@ cott_yield = interpolate_yield(cott_yield, cott_suit)
 ## other fibre
 ofib_phys =
     get_mapspam_data("ofib", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ofib_harv =
     get_mapspam_data("ofib", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ofib_yield =
     get_mapspam_data("ofib", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ofib_suit =
     get_gaez_suit_data("flx", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 ofib_nb = get_mapspam_neighb(ofib_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -458,19 +463,19 @@ ofib_yield = interpolate_yield(ofib_yield, ofib_suit)
 ## tobacco
 toba_phys =
     get_mapspam_data("toba", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 toba_harv =
     get_mapspam_data("toba", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 toba_yield =
     get_mapspam_data("toba", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 toba_suit =
     get_gaez_suit_data("tob", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 toba_nb = get_mapspam_neighb(toba_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -481,19 +486,19 @@ toba_yield = interpolate_yield(toba_yield, toba_suit)
 ## rest of crops
 rest_phys =
     get_mapspam_data("rest", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rest_harv =
     get_mapspam_data("rest", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rest_yield =
     get_mapspam_data("rest", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rest_suit =
     get_gaez_suit_data("mze", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 rest_nb = get_mapspam_neighb(rest_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -523,19 +528,19 @@ rice_rabi_nb = get_mapspam_neighb(rice_rabi_phys, w=nbw, fun=mean, na.rm=TRUE, p
 ## wheat
 whea_phys =
     get_mapspam_data("whea", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 whea_harv =
     get_mapspam_data("whea", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 whea_yield =
     get_mapspam_data("whea", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 whea_suit =
     get_gaez_suit_data("whe", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 whea_nb = get_mapspam_neighb(whea_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -546,19 +551,19 @@ whea_yield = interpolate_yield(whea_yield, whea_suit)
 ## vegetables
 vege_phys =
     get_mapspam_data("vege", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 vege_harv =
     get_mapspam_data("vege", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 vege_yield =
     get_mapspam_data("vege", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 vege_suit =
     get_gaez_suit_data("oni", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 vege_nb = get_mapspam_neighb(vege_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -569,19 +574,19 @@ vege_yield = interpolate_yield(vege_yield, vege_suit)
 ## rapeseed
 rape_phys =
     get_mapspam_data("rape", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rape_harv =
     get_mapspam_data("rape", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rape_yield =
     get_mapspam_data("rape", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rape_suit =
     get_gaez_suit_data("rsd", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 rape_nb = get_mapspam_neighb(rape_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -592,19 +597,19 @@ rape_yield = interpolate_yield(rape_yield, rape_suit)
 ## pulses (NB cowpea not present in India according to MapSPAM)
 bean_phys =
     get_mapspam_data("bean", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 bean_harv =
     get_mapspam_data("bean", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 bean_yield =
     get_mapspam_data("bean", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 bean_suit =
     get_gaez_suit_data("phb", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 bean_nb = get_mapspam_neighb(bean_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -615,19 +620,19 @@ bean_yield = interpolate_yield(bean_yield, bean_suit)
 ## chickpea
 chic_phys =
     get_mapspam_data("chic", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 chic_harv =
     get_mapspam_data("chic", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 chic_yield =
     get_mapspam_data("chic", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
     
 chic_suit =
     get_gaez_suit_data("chk", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 chic_nb = get_mapspam_neighb(chic_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -638,19 +643,19 @@ chic_yield = interpolate_yield(chic_yield, chic_suit)
 ## pigeon pea
 pige_phys =
     get_mapspam_data("pige", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 pige_harv =
     get_mapspam_data("pige", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 pige_yield =
     get_mapspam_data("pige", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 pige_suit =
     get_gaez_suit_data("pig", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 pige_nb = get_mapspam_neighb(pige_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -661,19 +666,19 @@ pige_yield = interpolate_yield(pige_yield, pige_suit)
 ## cowpea
 cowp_phys =
     get_mapspam_data("cowp", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cowp_harv =
     get_mapspam_data("cowp", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cowp_yield =
     get_mapspam_data("cowp", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cowp_suit =
     get_gaez_suit_data("cow", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 cowp_nb = get_mapspam_neighb(cowp_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -684,19 +689,19 @@ cowp_yield = interpolate_yield(cowp_yield, cowp_suit)
 ## lentil
 lent_phys =
     get_mapspam_data("lent", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 lent_harv =
     get_mapspam_data("lent", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 lent_yield =
     get_mapspam_data("lent", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 lent_suit =
     get_gaez_suit_data("chk", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 lent_nb = get_mapspam_neighb(lent_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -707,19 +712,19 @@ lent_yield = interpolate_yield(lent_yield, lent_suit)
 ## other pulses
 opul_phys =
     get_mapspam_data("opul", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 opul_harv =
     get_mapspam_data("opul", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 opul_yield =
     get_mapspam_data("opul", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 opul_suit =
     get_gaez_suit_data("chk", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 opul_nb = get_mapspam_neighb(opul_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -732,19 +737,19 @@ opul_yield = interpolate_yield(opul_yield, opul_suit)
 ## sugarcane (NB sugarbeet not grown in India)
 sugc_phys =
     get_mapspam_data("sugc", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugc_harv =
     get_mapspam_data("sugc", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugc_yield =
     get_mapspam_data("sugc", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugc_suit =
     get_gaez_suit_data("suc", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sugc_nb = get_mapspam_neighb(sugc_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -755,19 +760,19 @@ sugc_yield = interpolate_yield(sugc_yield, sugc_suit)
 ## sugar beet (not grown in India - included for completeness)
 sugb_phys =
     get_mapspam_data("sugb", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugb_harv =
     get_mapspam_data("sugb", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugb_yield =
     get_mapspam_data("sugb", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 sugb_suit =
     get_gaez_suit_data("sub", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 sugb_nb = get_mapspam_neighb(sugb_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -778,19 +783,19 @@ sugb_yield = interpolate_yield(sugb_yield, sugb_suit)
 ## coconut
 cnut_phys =
     get_mapspam_data("cnut", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cnut_harv =
     get_mapspam_data("cnut", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cnut_yield =
     get_mapspam_data("cnut", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cnut_suit =
     get_gaez_suit_data("con", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 
@@ -811,19 +816,19 @@ cnut_yield[["irri"]] = cnut_yield[["rain"]] * 1.5
 ## oil palm (not grown in India - included for completeness)
 oilp_phys =
     get_mapspam_data("oilp", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 oilp_harv =
     get_mapspam_data("oilp", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 oilp_yield =
     get_mapspam_data("oilp", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
     
 oilp_suit =
     get_gaez_suit_data("olp", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 oilp_nb = get_mapspam_neighb(oilp_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -834,19 +839,19 @@ oilp_yield = interpolate_yield(oilp_yield, oilp_suit)
 ## tropical fruit
 trof_phys =
     get_mapspam_data("trof", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 trof_harv =
     get_mapspam_data("trof", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 trof_yield =
     get_mapspam_data("trof", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 trof_suit =
     get_gaez_suit_data("ban", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 trof_nb = get_mapspam_neighb(trof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -857,20 +862,20 @@ trof_yield = interpolate_yield(trof_yield, trof_suit)
 ## temperate fruit
 temf_phys =
     get_mapspam_data("temf", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 temf_harv =
     get_mapspam_data("temf", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 temf_yield =
     get_mapspam_data("temf", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB temperate fruit suitability based on maize
 temf_suit =
     get_gaez_suit_data("mze", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 temf_nb = get_mapspam_neighb(temf_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -881,19 +886,19 @@ temf_yield = interpolate_yield(temf_yield, temf_suit)
 ## banana
 bana_phys =
     get_mapspam_data("bana", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 bana_harv =
     get_mapspam_data("bana", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 bana_yield =
     get_mapspam_data("bana", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 bana_suit =
     get_gaez_suit_data("ban", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 bana_nb = get_mapspam_neighb(bana_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -904,20 +909,20 @@ bana_yield = interpolate_yield(bana_yield, bana_suit)
 ## plantain
 plnt_phys =
     get_mapspam_data("plnt", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 plnt_harv =
     get_mapspam_data("plnt", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 plnt_yield =
     get_mapspam_data("plnt", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB plantain suitability based on plantain
 plnt_suit =
     get_gaez_suit_data("ban", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 plnt_nb = get_mapspam_neighb(plnt_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -928,19 +933,19 @@ plnt_yield = interpolate_yield(plnt_yield, plnt_suit)
 ## cassava
 cass_phys =
     get_mapspam_data("cass", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cass_harv =
     get_mapspam_data("cass", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cass_yield =
     get_mapspam_data("cass", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 cass_suit =
     get_gaez_suit_data("csv", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,1,1,3,3)) %>%
     ## `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
@@ -952,19 +957,19 @@ cass_yield = interpolate_yield(cass_yield, cass_suit)
 ## yams
 yams_phys =
     get_mapspam_data("yams", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 yams_harv =
     get_mapspam_data("yams", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 yams_yield =
     get_mapspam_data("yams", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 yams_suit =
     get_gaez_suit_data("yam", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,1,1,3,3)) %>%
     ## `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
@@ -976,20 +981,20 @@ yams_yield = interpolate_yield(yams_yield, yams_suit)
 ## other roots
 orts_phys =
     get_mapspam_data("orts", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 orts_harv =
     get_mapspam_data("orts", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 orts_yield =
     get_mapspam_data("orts", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 ## NB other roots suitability based on yam
 orts_suit =
     get_gaez_suit_data("yam", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,1,1,3,3)) %>%
     ## `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
@@ -1001,19 +1006,19 @@ orts_yield = interpolate_yield(orts_yield, orts_suit)
 ## cocoa
 coco_phys =
     get_mapspam_data("coco", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 coco_harv =
     get_mapspam_data("coco", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 coco_yield =
     get_mapspam_data("coco", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 coco_suit =
     get_gaez_suit_data("coc", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 coco_nb = get_mapspam_neighb(coco_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -1024,19 +1029,19 @@ coco_yield = interpolate_yield(coco_yield, coco_suit)
 ## tea
 teas_phys =
     get_mapspam_data("teas", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 teas_harv =
     get_mapspam_data("teas", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 teas_yield =
     get_mapspam_data("teas", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 teas_suit =
     get_gaez_suit_data("tea", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 teas_nb = get_mapspam_neighb(teas_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -1047,19 +1052,19 @@ teas_yield = interpolate_yield(teas_yield, teas_suit)
 ## arabica coffee
 acof_phys =
     get_mapspam_data("acof", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 acof_harv =
     get_mapspam_data("acof", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 acof_yield =
     get_mapspam_data("acof", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 acof_suit =
     get_gaez_suit_data("cof", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 acof_nb = get_mapspam_neighb(acof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -1070,19 +1075,19 @@ acof_yield = interpolate_yield(acof_yield, acof_suit)
 ## robusta coffee
 rcof_phys =
     get_mapspam_data("rcof", mapspam_path, "physical_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rcof_harv =
     get_mapspam_data("rcof", mapspam_path, "harvested_area", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rcof_yield =
     get_mapspam_data("rcof", mapspam_path, "yield", suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn))
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
 
 rcof_suit =
     get_gaez_suit_data("cof", gaez_path, suffix=suffix) %>%
-    lapply(FUN=function(x) x %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
     `[`(c(1,1,3,3,4,4)) %>%
     setNames(c("total","irri","rain","rain_h","rain_l","rain_s"))
 rcof_nb = get_mapspam_neighb(rcof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
@@ -1305,16 +1310,16 @@ gcam_prod =
     dplyr::select(-sector) %>%
     mutate(year = gsub("X", "", year)) %>%
     mutate(year = as.numeric(year)) %>%
-    filter(!output %in% c("UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
-    ## filter(!output %in% c("biomass","UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
+    ## filter(!output %in% c("UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
+    filter(!output %in% c("biomass","UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
     filter(region %in% "India") 
 
-gcam_prod %>%
-    ggplot(aes(x=year, y=production, colour=output)) +
-    geom_line() +
-    labs(x="", y="Production (Mt)") +
-    theme(legend.title=element_blank(), legend.position="bottom")+
-    guides(colour=guide_legend(ncol=3))
+## gcam_prod %>%
+##     ggplot(aes(x=year, y=production, colour=output)) +
+##     geom_line() +
+##     labs(x="", y="Production (Mt)") +
+##     theme(legend.title=element_blank(), legend.position="bottom")+
+##     guides(colour=guide_legend(ncol=3))
 
 ## spread according to crop type
 gcam_prod %<>% spread(output, production)
@@ -1336,7 +1341,7 @@ gcam_yield =
     mutate(year = gsub("X", "", year)) %>%
     mutate(year = as.numeric(year)) %>%
     filter(!sector %in% c("biomass","biomassOil","FodderHerb","Pasture","UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
-    filter(region %in% "India") 
+    filter(region %in% "India")
     
 gcam_yield %>%
     ggplot(aes(x=year, y=yield, colour=sector)) +
@@ -1344,6 +1349,36 @@ gcam_yield %>%
     labs(x="", y="Yield (?)") +
     theme(legend.title=element_blank(), legend.position="bottom")+
     guides(colour=guide_legend(ncol=3))
+
+gcam_yield %<>% spread(sector, yield)
+
+gcam_area =
+    proj %>%
+    extract2("Reference") %>%
+    extract2("Land Allocation") %>%
+    gather(year, area,
+           -scenario,
+           -region,
+           -land.allocation,
+           -Units) %>%
+    separate(land.allocation, c("land.allocation","AEZ"), "AEZ") %>%
+    group_by(scenario, region, land.allocation, year) %>%
+    dplyr::select(-AEZ) %>%
+    summarise_at(vars(-Units), funs(sum(., na.rm=TRUE))) %>%
+    ungroup %>%
+    mutate(year = gsub("X", "", year)) %>%
+    mutate(year = as.numeric(year)) %>%
+    ## filter(!sector %in% c("biomass","biomassOil","FodderHerb","Pasture","UnmanagedLand","Forest","NonFoodDemand_Forest")) %>%
+    filter(region %in% "India")
+
+## gcam_area %>%
+##     ggplot(aes(x=year, y=area, colour=sector)) +
+##     geom_line() +
+##     labs(x="", y="Area (?)") +
+##     theme(legend.title=element_blank(), legend.position="bottom")+
+##     guides(colour=guide_legend(ncol=3))
+
+gcam_area %<>% spread(land.allocation, area)
 
 ## calibrate GCAM data so that it matches MapSPAM in 2005
 
@@ -1357,11 +1392,18 @@ total_production_fun = function(area, yield, ...) {
 
 rice_sf = total_production_fun(rice_harv[["total"]], rice_yield[["total"]]) / 1e3 / 1e6 / gcam_prod[["Rice"]][2]
 
+rice_yield_sf = mean(getValues(rice_yield[["total"]]), na.rm=TRUE) / 1000 / gcam_yield[["Rice"]][2]
+
 ## wheat
 wheat_sf = total_production_fun(whea_harv[["total"]], whea_yield[["total"]]) / 1e3 / 1e6 / gcam_prod[["Wheat"]][2]
 
+wheat_yield_sf = mean(getValues(whea_yield[["total"]]), na.rm=TRUE)
+
 ## maize/corn
 corn_sf = total_production_fun(maiz_harv[["total"]], maiz_yield[["total"]]) / 1e3 / 1e6 / gcam_prod[["Corn"]][2]
+
+maiz_yield_vals = getValues(maiz_yield[["total"]]) %>% `[`(. > 0) %>% mean(na.rm=TRUE)
+corn_yield_sf = mean(getValues(maiz_yield[["total"]]), na.rm=TRUE)
 
 ## other cereals
 ocer_total =
@@ -1540,3 +1582,9 @@ dmd =
 
 ## save object
 saveRDS(dmd, "data/gcam_reference_demand.rds")
+
+s = stack("data-raw/epic_hadgem2-es_rcp4p5_ssp2_noco2_firr_yield_whe_annual_2005_2035.nc4") %>% crop(india_ext)
+s = s * 1000 
+
+
+

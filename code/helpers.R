@@ -54,6 +54,8 @@ get_mapspam_data = function(crop, path, what, suffix, ...) {
     } else {
         stop()
     }
+
+    if (suffix == "_ll") suffix = ""
     
     out =
         list(total=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TA_", toupper(crop), "_A", suffix, ".tif"))),

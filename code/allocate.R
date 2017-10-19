@@ -33,6 +33,8 @@ init_area_mat =
     mutate_all(funs(replace(., is.na(.), 0))) %>%
     as.matrix
 
+init_area_mat[init_area_mat < 0] = 0
+
 init_total_area_mat =
     get_total_areaC(init_area_mat, n_season, n_input) %>%
     `colnames<-`(colnames(init_area_mat))
@@ -73,7 +75,10 @@ rand_min = 0
 rand_max = 0.25
 
 ## specify output directory
-out_path = "data"
+out_path = "data/output"
+if (!dir.exists(out_path)) {
+    dir.create(out_path)
+}
 
 ## start routine
 time = seq(2005, 2100, by=5)
@@ -83,11 +88,16 @@ yield_mat = init_yield_mat
 nb_mat = init_nb_mat
 suit_mat = init_suit_mat
 
-time = time[1:3]
+## time = time[1:3]
+
+## eff_seed = sample(1:2^15, 1)
+## print(sprintf("Seed for session: %s", eff_seed))
+
+set.seed(18384)
 
 for (i in 2:length(time)) {    
 
-    tsuit_mat = pmax(nb_mat, suit_mat)
+    tsuit_mat = pmax(nb_mat, suit_mat) ## TODO: update this, add neighbourhood rule
     
     ## check dimensions etc.
     if (!isTRUE(all.equal(colnames(dmd), colnames(area_mat), colnames(total_area_mat), colnames(yield_mat)))) {
@@ -109,7 +119,7 @@ for (i in 2:length(time)) {
 
     ## index and names of crops with increasing/decreasing demand
     decr_ix = dmd1 < 0
-    incr_ix = !decr_ix
+    incr_ix = !decr_ix ##dmd1 > 0
 
     crop_nms = colnames(dmd)
     decr_crops = crop_nms[decr_ix]
@@ -117,7 +127,7 @@ for (i in 2:length(time)) {
 
     ## first, allocate crops with increasing demand
     for (j in 1:length(alloc_order)) {
-        crop = alloc_order[j]; print(crop)
+        crop = alloc_order[j]; ##print(crop)
         if (crop %in% incr_crops) {
             crop_ix = crop_nms %in% crop
 
@@ -137,7 +147,7 @@ for (i in 2:length(time)) {
                            rand_min,       ## rand_min
                            rand_max,       ## rand_max
                            1000,           ## tol
-                           1000000)        ## maxiter
+                           100000)         ## maxiter
 
             ## get new values for subsequent crop
             area_mat = res[["area"]]
@@ -167,7 +177,7 @@ for (i in 2:length(time)) {
                            rand_min,       ## rand_min
                            rand_max,       ## rand_max
                            1000,           ## tol
-                           1000000)        ## maxiter
+                           100000)        ## maxiter
 
             ## get new values for subsequent crop
             area_mat = res[["area"]]
@@ -176,6 +186,8 @@ for (i in 2:length(time)) {
         }
     }
 
+    dmd[i,] = colSums(area_mat * yield_mat)
+    
     ## write output to file
     for (j in 1:length(alloc_order)) {
         crop = alloc_order[j]
@@ -201,14 +213,12 @@ for (i in 2:length(time)) {
                                 toupper(input_levels[m]), "_",
                                 time[i], ".tif")
                     
-                    ## writeRaster(r, file.path(out_path, fn), format="GTiff", overwrite=TRUE)
+                    writeRaster(r, file.path(out_path, fn), format="GTiff", overwrite=TRUE)
                 }
             }
         }
     }    
 }
 
-## library(RcppArmadillo)
-## cppFunction("arma::mat schur(arma::mat& a, arma::mat& b) {
-##   return(a % b);
-## }", depends="RcppArmadillo")
+write.table(dmd, "data/output/allocated_area.txt", sep=" ", row.names=FALSE, col.names=TRUE)
+
