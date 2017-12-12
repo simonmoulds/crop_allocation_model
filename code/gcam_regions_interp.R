@@ -6,10 +6,10 @@ library(maptools)
 library(splancs)
 
 ## latlong
-v = readOGR("data", "gcam_32rgn_eck4")
+v = readOGR("data", "gcam_32rgn")
 template = raster(file.path("data",
                             "iiasa-ifpri-cropland-map",
-                            "iiasa_ifpri_cropland_map_5m_eck4.tif"))
+                            "iiasa_ifpri_cropland_map_5m_ll.tif"))
 template = raster(template)
 r = rasterize(v, template, field="GCAM_ID")
 r[r == 0] = NA
@@ -18,7 +18,7 @@ r[r == 0] = NA
 ## region map exactly matches the land area of MapSPAM maps
 
 ## MapSPAM files
-fs = list.files(file.path("data", "mapspam_data"), pattern="SPAM2005V3r1_global_A_TA_[A-Z]{4}_A_eck4.tif$", full.names=TRUE)
+fs = list.files(file.path("data", "mapspam_data"), pattern="SPAM2005V3r1_global_A_TA_[A-Z]{4}_A.tif$", full.names=TRUE)
 
 x = raster(fs[1])
 x[] = 0
@@ -61,4 +61,4 @@ out = template
 xy = as(r, "SpatialPoints")
 out[xy] = r[xy]
 
-writeRaster(out, filename="data/gcam_32rgn_rast_eck4.tif", format="GTiff", overwrite=TRUE)
+writeRaster(out, filename="data/gcam_32rgn_rast.tif", format="GTiff", overwrite=TRUE)

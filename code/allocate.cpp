@@ -23,7 +23,7 @@ NumericVector sum_interval(NumericVector x, int interval) {
 }
 
 // [[Rcpp::export]]
-NumericMatrix allocate_expansionC(NumericMatrix area, NumericMatrix suit, int crop_ix, double cropland_area, double cell_area, double fact, double rand_min, double rand_max) {
+NumericMatrix allocate_expansionC(NumericMatrix area, NumericMatrix suit, NumericMatrix nb, int crop_ix, double cropland_area, double cell_area, double fact, double rand_min, double rand_max) {
 
   // Function to allocate cropland expansion for the case where a cell
   // contains unallocated cropland. The function is stochastic, and only
@@ -51,7 +51,9 @@ NumericMatrix allocate_expansionC(NumericMatrix area, NumericMatrix suit, int cr
       }
 
       if (chng >= 0) {
-	if (suit(i,crop_ix) > rnd) { // only make change if suitability exceeds random number
+
+	// only make change if suitability exceeds random number
+	if ((suit(i,crop_ix) > rnd) && (nb(i,crop_ix) > 0)) { 
 	  area1(i,crop_ix) += chng;
 	}
       }
@@ -61,7 +63,7 @@ NumericMatrix allocate_expansionC(NumericMatrix area, NumericMatrix suit, int cr
 }
 
 // [[Rcpp::export]]
-NumericMatrix allocate_contractionC(NumericMatrix area, NumericMatrix suit, int crop_ix, double cell_area, double fact, double rand_min, double rand_max) {
+NumericMatrix allocate_contractionC(NumericMatrix area, NumericMatrix suit, NumericMatrix nb, int crop_ix, double cell_area, double fact, double rand_min, double rand_max) {
 
   // Function to deallocate cropland that is currently allocated to a crop
   // type with falling demand.
@@ -84,8 +86,9 @@ NumericMatrix allocate_contractionC(NumericMatrix area, NumericMatrix suit, int 
 	double potchng = totchng * (newarea / alloc_area);
 	double chng = Rcpp::max(NumericVector::create(0.0, potchng));
 	newarea = Rcpp::max(NumericVector::create(0.0, (newarea - chng)));
-
-	if (suit(i,crop_ix) < rnd) { // only make change if suitability is less than random number
+	
+        // only make change if suit is less than random number and nb greater than zero
+	if ((suit(i,crop_ix) < rnd)) { // && (nb(i,crop_ix) > 0)) {
           area1(i,crop_ix) = newarea;
 	}
       }
@@ -95,7 +98,7 @@ NumericMatrix allocate_contractionC(NumericMatrix area, NumericMatrix suit, int 
 }
 
 // [[Rcpp::export]]
-NumericMatrix allocate_crop_conversionC(NumericMatrix area, NumericMatrix suit, IntegerVector decr_ix, int crop_ix, double cell_area, double fact, double rand_min, double rand_max) {
+NumericMatrix allocate_crop_conversionC(NumericMatrix area, NumericMatrix suit, NumericMatrix nb, IntegerVector decr_ix, int crop_ix, double cell_area, double fact, double rand_min, double rand_max) {
   
   int nrow = area.nrow(), ncol = area.ncol();
   int n_decr = decr_ix.size();
@@ -122,7 +125,8 @@ NumericMatrix allocate_crop_conversionC(NumericMatrix area, NumericMatrix suit, 
     for (int i = 0; i < nrow; i++) {
       double diff = 0;
 
-      if (suit(i,crop_ix) > rnd) { // only make change if suitability exceeds random number
+      // only make change if suitability exceeds random number
+      if ((suit(i,crop_ix) > rnd) && (nb(i,crop_ix) > 0)) { 
 	
 	for (int j = 0; j < n_decr; j++) {
 	  
@@ -145,7 +149,7 @@ NumericMatrix allocate_crop_conversionC(NumericMatrix area, NumericMatrix suit, 
 }
 
 // [[Rcpp::export]]
-NumericMatrix allocate_intensificationC(NumericMatrix area, NumericMatrix suit, int crop_ix, double cell_area, double fact, double rand_min, double rand_max) {
+NumericMatrix allocate_intensificationC(NumericMatrix area, NumericMatrix suit, NumericMatrix nb, int crop_ix, double cell_area, double fact, double rand_min, double rand_max) {
 
   // Function to model agricultural intensification - i.e. transition from
   // a lower intensity to a higher intensity
@@ -170,7 +174,8 @@ NumericMatrix allocate_intensificationC(NumericMatrix area, NumericMatrix suit, 
       double ar = min(NumericVector::create(cell_area * fact, lower_intensity_area)); 	
       if (lower_intensity_area > 0) {
 	double target_suit = suit(hi_ix,crop_ix); // transition from low intensity to high intensity
-	if (target_suit > rnd) {
+	double target_nb = nb(hi_ix,crop_ix);
+	if ((target_suit > rnd) && (target_nb > 0)) {
  	  higher_intensity_area += ar;
 	  lower_intensity_area -= ar;
 	}
@@ -226,7 +231,7 @@ NumericMatrix get_total_areaC(NumericMatrix x, int n_season, int n_input) {
 }
 
 // [[Rcpp::export]]
-List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMatrix crop_suit, NumericMatrix total_crop_area, NumericVector cropland_area, NumericVector cell_area, NumericVector demand0, int crop_ix, IntegerVector decr_ix, int n_season, int n_input, double fact, double rand_min, double rand_max, double tol, int maxiter) {
+List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMatrix crop_suit, NumericMatrix crop_nb, NumericMatrix total_crop_area, NumericVector cropland_area, NumericVector cell_area, NumericVector demand0, int crop_ix, IntegerVector decr_ix, int n_season, int n_input, double fact, double rand_min, double rand_max, double tol, int maxiter) {
 
   // make deep copies of variables that will be changed
   NumericMatrix crop_area = clone(crop_area0);
@@ -246,6 +251,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 
     NumericMatrix tmp_crop_area = crop_area(Range(start_row_ix, end_row_ix),_);
     NumericMatrix tmp_crop_suit = crop_suit(Range(start_row_ix, end_row_ix),_);
+    NumericMatrix tmp_crop_nb = crop_nb(Range(start_row_ix, end_row_ix),_);
     NumericMatrix tmp_crop_yield = crop_yield(Range(start_row_ix, end_row_ix),_);
    
     // create a copy of tmp_crop_area so we can calculate the change
@@ -284,6 +290,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 
 	NumericMatrix season_area = tmp_crop_area(Range(k * n_input, k * n_input + (n_input - 1)),_);
 	NumericMatrix season_suit = tmp_crop_suit(Range(k * n_input, k * n_input + (n_input - 1)),_);
+	NumericMatrix season_nb = tmp_crop_nb(Range(k * n_input, k * n_input + (n_input - 1)),_);
 
 	// working copy
 	NumericMatrix season_area2 = clone(season_area);
@@ -332,6 +339,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 	      season_area2 =
 	      	allocate_crop_conversionC(season_area2,  // area
 	      				  season_suit,   // suitability
+					  season_nb,	 // neighbourhood
 	      				  decr_ix,       // decr_ix
 	      				  crop_ix,       // crop_ix
 	      				  tmp_cell_area, // cell_area
@@ -377,6 +385,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 	      season_area2 =
 	      	allocate_crop_conversionC(season_area2,  // area
 	      				  season_suit,   // suitability
+					  season_nb,
 	      				  decr_ix,       // decr_ix
 	      				  crop_ix,       // crop_ix
 	      				  tmp_cell_area, // cell_area
@@ -417,6 +426,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 	  season_area2 =
 	    allocate_expansionC(season_area2,      // area
 	  			season_suit,       // suit
+				season_nb,
 	  			crop_ix,           // crop_ix
 	  			tmp_cropland_area, // cropland_area
 	  			tmp_cell_area,     // cell_area
@@ -428,6 +438,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 	  season_area2 =
 	    allocate_intensificationC(season_area2,  // area
 	  			      season_suit,   // suit
+				      season_nb,
 	  			      crop_ix,       // crop_ix
 	  			      tmp_cell_area, // cell_area
 	  			      fact,          // fact
@@ -448,6 +459,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 	    season_area2 =
 	      allocate_crop_conversionC(season_area2,  // area
 	  				season_suit,   // suitability
+					season_nb,
 	  				decr_ix,       // decr_ix
 	  				crop_ix,       // crop_ix
 	  				tmp_cell_area, // cell_area
@@ -459,6 +471,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 	  season_area2 =
 	    allocate_expansionC(season_area2,      // area
 	  			season_suit,       // suit
+				season_nb,
 	  			crop_ix,           // crop_ix
 	  			tmp_cropland_area, // cropland_area
 	  			tmp_cell_area,     // cell_area
@@ -469,6 +482,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 	  season_area2 =
 	    allocate_intensificationC(season_area2,  // area
 	  			      season_suit,   // suit
+				      season_nb,
 	  			      crop_ix,       // crop_ix
 	  			      tmp_cell_area, // cell_area
 	  			      fact,          // fact
@@ -527,7 +541,7 @@ List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 }
 
 // [[Rcpp::export]]
-List allocate_decr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMatrix crop_suit, NumericMatrix total_crop_area, NumericVector cropland_area, NumericVector cell_area, NumericVector demand0, int crop_ix, IntegerVector decr_ix, int n_season, int n_input, double fact, double rand_min, double rand_max, double tol, int maxiter) {
+List allocate_decr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMatrix crop_suit, NumericMatrix crop_nb, NumericMatrix total_crop_area, NumericVector cropland_area, NumericVector cell_area, NumericVector demand0, int crop_ix, IntegerVector decr_ix, int n_season, int n_input, double fact, double rand_min, double rand_max, double tol, int maxiter) {
 
   // make deep copies of variables that will be changed
   NumericMatrix crop_area = clone(crop_area0);
@@ -548,6 +562,7 @@ List allocate_decr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 
     NumericMatrix tmp_crop_area = crop_area(Range(start_row_ix, end_row_ix),_);
     NumericMatrix tmp_crop_suit = crop_suit(Range(start_row_ix, end_row_ix),_);
+    NumericMatrix tmp_crop_nb = crop_nb(Range(start_row_ix, end_row_ix),_);
     NumericMatrix tmp_crop_yield = crop_yield(Range(start_row_ix, end_row_ix),_);
 
     NumericMatrix tmp_crop_area0 = clone(tmp_crop_area);
@@ -563,12 +578,14 @@ List allocate_decr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 
     	NumericMatrix season_area = tmp_crop_area(Range(k * n_input, k * n_input + (n_input - 1)),_);
     	NumericMatrix season_suit = tmp_crop_suit(Range(k * n_input, k * n_input + (n_input - 1)),_);
+	NumericMatrix season_nb = tmp_crop_nb(Range(k * n_input, k * n_input + (n_input - 1)),_);
     	NumericMatrix season_area2 = clone(season_area); // work on a copy
 
     	// untested
     	season_area2 =
     	  allocate_contractionC(season_area2,      // area
     				season_suit,       // suit
+				season_nb,
     				crop_ix,           // crop_ix
     				tmp_cell_area,     // cell_area
     				fact,              // fact
@@ -608,7 +625,7 @@ List allocate_decr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMa
 }
 
 // [[Rcpp::export]]
-List allocate(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMatrix crop_suit, NumericMatrix total_crop_area, NumericVector cropland_area, NumericVector cell_area, NumericVector demand0, LogicalVector crop, LogicalVector decr, int n_season, int n_input, double fact, double rand_min, double rand_max, double tol, int maxiter) {
+List allocate(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMatrix crop_suit, NumericMatrix crop_nb, NumericMatrix total_crop_area, NumericVector cropland_area, NumericVector cell_area, NumericVector demand0, LogicalVector crop, LogicalVector decr, int n_season, int n_input, double fact, double rand_min, double rand_max, double tol, int maxiter) {
 
   if (crop.size() != decr.size()) {
     stop("Logical vectors 'crop' and 'decr' must have the same size");
@@ -626,10 +643,10 @@ List allocate(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMatrix 
   
   bool test = std::find(decr_ix.begin(), decr_ix.end(), crop_ix) != decr_ix.end();
   if (test) {
-    return allocate_decr(crop_area0, crop_yield, crop_suit, total_crop_area, cropland_area, cell_area, demand0, crop_ix, decr_ix, n_season, n_input, fact, rand_min, rand_max, tol, maxiter);
+    return allocate_decr(crop_area0, crop_yield, crop_suit, crop_nb, total_crop_area, cropland_area, cell_area, demand0, crop_ix, decr_ix, n_season, n_input, fact, rand_min, rand_max, tol, maxiter);
     
   } else {
-    return allocate_incr(crop_area0, crop_yield, crop_suit, total_crop_area, cropland_area, cell_area, demand0, crop_ix, decr_ix, n_season, n_input, fact, rand_min, rand_max, tol, maxiter);    
+    return allocate_incr(crop_area0, crop_yield, crop_suit, crop_nb, total_crop_area, cropland_area, cell_area, demand0, crop_ix, decr_ix, n_season, n_input, fact, rand_min, rand_max, tol, maxiter);    
   }
   
 }

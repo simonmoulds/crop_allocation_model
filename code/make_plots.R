@@ -1,5 +1,10 @@
 library(rasterVis)
 library(maptools)
+library(grid)
+library(viridis)
+library(magrittr)
+library(dplyr)
+library(tidyr)
 
 ## demand
 aggregate_dmd = function(x, ...) {
@@ -18,67 +23,331 @@ aggregate_dmd = function(x, ...) {
 }
 
 time = seq(2005, 2100, by=5)
-dmd = readRDS("data/gcam_reference_demand.rds") %>% as.data.frame(dmd) %>% aggregate_dmd
-alloc = read.table("data/output/allocated_area.txt", sep=" ", header=TRUE) %>% aggregate_dmd
+dmd = readRDS("data/gcam_reference_demand.rds") %>% as.data.frame %>% aggregate_dmd
+## alloc = read.table("data/output/allocated_area.txt", sep=" ", header=TRUE) %>% aggregate_dmd
 
-names(alloc) = paste0(names(alloc), "_")
-x = cbind(data.frame(time=time), dmd, alloc) %>%
+## names(alloc) = paste0(names(alloc), "_")
+## x = cbind(data.frame(time=time), dmd, alloc) %>%
+##     gather(crop, production, -time) %>%
+##     mutate(crop=factor(crop))
+
+x = cbind(data.frame(time=time), dmd) %>%
     gather(crop, production, -time) %>%
     mutate(crop=factor(crop))
 
-cols=rep(rainbow(10), each=2)
-xyplot(production~time,
-       group=crop,
-       data=x,
-       type=rep(c("l","p"), 10),
-       lty=rep(c(1,0), 10),
-       pch=rep(c(NA,1), 10),
-       col=cols,
-       xlab=list("Year", cex=1),
-       ylab=list("Production", cex=1),
-       scales=list(cex=1, tck=1, y=list(rot=0)),
-       key=list(space="bottom",
-                text=list(levels(x$crop)[seq(1,19,by=2)], cex=1),
-                lines=list(col=cols[seq(1,19,by=2)]),
-                columns=2))
+## cols=rep(rainbow(10), each=2)
+cols=rep(rainbow(10))
+p = xyplot(production~time,
+           group=crop,
+           data=x,
+           par.settings=list(background = list(col = "transparent")),
+           ## trellis.par.set(background = list(col = "transparent")),
+           type="l",
+           lty=1,
+           ## type=rep(c("l","p"), 10),
+           ## lty=rep(c(1,0), 10),
+           lwd=5,
+           ## pch=rep(c(NA,1), 10),
+           col=cols,
+           xlab=list("Year", cex=1.5),
+           ylab=list("Production (tonnes)", cex=1.5),
+           ## scales=list(cex=1.5, tck=1, y=list(rot=0)),
+           scales=list(cex=1.5, tck=1, y=list(rot=0, at=c(0,0.5e8, 1e8, 1.5e8, 2e8, 2.5e8), labels=expression(0, 0.5 %*% 10^8, 1.0 %*% 10^8, 1.5 %*% 10^8, 2.0 %*% 10^8, 2.5 %*% 10^8))),
+           key=list(space="right",
+                    lines=list(col=cols, lwd=5),
+                    text=list(levels(x$crop), cex=1.5),
+                    columns=1,
+                    padding.text=4),
+           panel=function(...) {
+               grid.rect(gp=gpar(col=NA, fill="white"))
+               panel.xyplot(...)
+           })
+## key=list(space="right",
+           ##          text=list(levels(x$crop)[seq(1,19,by=2)], cex=2),
+           ##          lines=list(col=cols[seq(1,19,by=2)]),
+           ##          columns=1))
+p
 
-## time series of different crops (wheat, rice)
-
-myfun=function(x, ...) {
-    p = levelplot(x,
-                  margin=FALSE,
-                  xlab=NULL,
-                  ylab=NULL,
-                  par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
-                  par.strip.text=list(cex=0.8),
-                  col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "PuBuGn"))(101),
-                  ## at=seq(0,mx,length=101),
-                  scales=list(draw=TRUE, cex=0.8),
-                  colorkey=list(space="bottom", width=0.75, labels=list(cex=0.8), tck=0))
-    p
-}
+pname <- file.path(file.path("doc/gcam_production_output.png"))
+trellis.device(device="png", width=9, height=6.25, units="in", res=320, file=pname, bg="transparent")
+print(p)
+dev.off()
 
 sp = getRgshhsMap(fn = system.file("share/gshhs_c.b", package= "maptools"), xlim=c(60,105), ylim=c(5,40))
 
+## ======================================
+## model output
+## ======================================
+
 ## wheat, irrigated
-fs = list.files("data/output", "INDIA_WHEA_RABI_IRRI_[0-9]{4}.tif", full.names=TRUE)[1:18]
-p = myfun(stack(fs))
-p <- p + layer(sp.polygons(sp, lwd=0.5))
-p
+## ################
 
-## rice, irrigated
-fs = list.files("data/output", "INDIA_RICE_KHARIF_IRRI_[0-9]{4}.tif", full.names=TRUE)[1:18]
-p = myfun(stack(fs))
-p <- p + layer(sp.polygons(sp, lwd=0.5))
-p
+fs = list.files("data/output", "INDIA_WHEA_RABI_IRRI_[0-9]{4}.tif", full.names=TRUE)##[c(1,3,5,7,9,11,13,15,17,19)]
 
-## library(grid)
-## pname <- file.path(file.path("/home/simon/Dropbox/wheat_sim.png"))
-## trellis.device(device="png", width=6, height=6.25, units="in", res=320, file=pname)
-## print(p)
-## pushViewport(viewport(0.52,0.015,0.5,0.07))  ## TODO
-## grid.text("Area (Ha)", gp=gpar(cex=0.8, font=1, col="black"))
-## dev.off()
+st = stack(fs)
+
+p = levelplot(st,
+              margin=FALSE,
+              xlab=NULL,
+              ylab=NULL,
+              par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5)), background=list(col="transparent"), layout.widths=list(right.padding=1)),
+              par.strip.text=list(cex=1.25),
+              names.attr=as.character(seq(2010,2100,5)),
+              ## names.attr=c("Irrigated","Rainfed (high input)","Rainfed (low input)","Subsistence"),
+              col.regions=viridis(91, direction=-1),
+              layout=c(4,5),
+              scales=list(draw=TRUE, cex=1.25),
+              colorkey=list(space="bottom",
+                            width=1,
+                            at=seq(0,90000,length.out=91),
+                            labels=list(at=seq(0,80000,10000),
+                                        labels=seq(0,80000,10000), cex=1.25), tck=0),
+              panel=function(...) {
+                  grid.rect(gp=gpar(col=NA, fill="white"))
+                  panel.levelplot(...)
+              })
+
+p <- p + layer(sp.polygons(sp, lwd=1))
+
+pname <- file.path(file.path("doc/wheat_sim.png"))
+trellis.device(device="png", width=9, height=13.5, units="in", res=320, file=pname, bg="transparent")
+print(p)
+pushViewport(viewport(0.52,0.015,0.5,0.07))  ## TODO
+grid.text("Area (ha)", gp=gpar(cex=1.25, font=1, col="black"))
+dev.off()
+
+## ======================================
+## input data
+## ======================================
+
+## plots of input data
+source("code/helpers.R")
+
+mapspam_path = "data/mapspam_data"
+gaez_path = "data/gaez_data"
+
+suffix = "_ll"
+fact=3
+
+india_rgn =
+    raster(file.path("data", paste0("gcam_32rgn_rast", suffix, ".tif"))) %>%
+    { if (fact > 1) raster::aggregate(x=., fact=fact, fun=modal) else .}
+india_rgn[india_rgn != 17] = NA
+india_rgn %<>% trim
+india_rgn[!is.na(india_rgn)] = 1
+india_ext = extent(india_rgn)
+
+## wheat (physical area, yield)
+## ############################
+
+template = raster(xmn=-180, xmx=180, ymn=-90, ymx=90, nrow=2160, ncol=4320)
+whea_phys =
+    get_mapspam_data("whea", mapspam_path, "physical_area", suffix=suffix) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>% `[`(c(2,4,5,6)) %>% stack
+
+p = levelplot(whea_phys,
+              margin=FALSE,
+              xlab=NULL,
+              ylab=NULL,
+              par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5)), background=list(col="transparent"), layout.widths=list(right.padding=1)),
+              par.strip.text=list(cex=1.25),
+              names.attr=c("Irrigated","Rainfed (high input)","Rainfed (low input)","Subsistence"),
+              col.regions=viridis(91, direction=-1),
+              layout=c(4,1),
+              scales=list(draw=TRUE, cex=1.25),
+              colorkey=list(space="bottom",
+                            width=1,
+                            at=seq(0,90000,length.out=91),
+                            labels=list(at=seq(0,80000,10000),
+                                        labels=seq(0,80000,10000), cex=1.25), tck=0),
+              panel=function(...) {
+                  grid.rect(gp=gpar(col=NA, fill="white"))
+                  panel.levelplot(...)
+              })
+
+p <- p + layer(sp.polygons(sp, lwd=1))##, fill="lightgrey"))
+
+pname <- file.path(file.path("doc/wheat_mapspam_physical_area.png"))
+trellis.device(device="png", width=9, height=4, units="in", res=320, file=pname, bg="transparent")
+print(p)
+pushViewport(viewport(0.52,0.030,0.5,0.15))  ## TODO
+grid.text("Area (ha)", gp=gpar(cex=1.25, font=1, col="black"))
+dev.off()
+
+whea_yield =
+    get_mapspam_data("whea", mapspam_path, "yield", suffix=suffix) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>% `[`(c(2,4,5,6)) %>% stack %>% `/`(1000)
+
+p = levelplot(whea_yield,
+              margin=FALSE,
+              xlab=NULL,
+              ylab=NULL,
+              par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5)), background=list(col="transparent")),
+              par.strip.text=list(cex=1.25),
+              names.attr=c("Irrigated","Rainfed (high input)","Rainfed (low input)","Subsistence"),
+              col.regions=viridis(1201, direction=-1),
+              layout=c(4,1),
+              scales=list(draw=TRUE, cex=1.25),
+              colorkey=list(space="bottom",
+                            width=1,
+                            at=seq(0,12,length.out=1201),
+                            labels=list(at=seq(0,12,2),
+                                        labels=seq(0,12,2), cex=1.25), tck=0),
+              panel=function(...) {
+                  grid.rect(gp=gpar(col=NA, fill="white"))
+                  panel.levelplot(...)
+              })
+
+p <- p + layer(sp.polygons(sp, lwd=1))
+
+pname <- file.path(file.path("doc/wheat_mapspam_yield.png"))
+trellis.device(device="png", width=9, height=4, units="in", res=320, file=pname, bg="transparent")
+print(p)
+pushViewport(viewport(0.52,0.030,0.5,0.15))  ## TODO
+grid.text("Yield (t/ha)", gp=gpar(cex=1.25, font=1, col="black"))
+dev.off()
+
+## wheat (potential yield)
+## #######################
+
+whea_potyld =
+    get_gaez_potyld_data("whea", gaez_path, suffix=suffix) %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+    `[`(c(1,1,3,3,4,4)) %>%
+    setNames(c("total","irri","rain","rain_h","rain_l","rain_s")) %>%
+    `[`(c(2,4,5,6)) %>% stack %>% `/`(1000)
+
+p = levelplot(whea_potyld,
+              margin=FALSE,
+              xlab=NULL,
+              ylab=NULL,
+              par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5)), background=list(col="transparent")),
+              par.strip.text=list(cex=1.25),
+              names.attr=c("Irrigated","Rainfed (high input)","Rainfed (low input)","Subsistence"),
+              col.regions=viridis(1201, direction=-1),
+              layout=c(4,1),
+              scales=list(draw=TRUE, cex=1.25),
+              colorkey=list(space="bottom",
+                            width=1,
+                            at=seq(0,12,length.out=1201),
+                            labels=list(at=seq(0,12,2),
+                                        labels=seq(0,12,2), cex=1.25), tck=0),
+              panel=function(...) {
+                  grid.rect(gp=gpar(col=NA, fill="white"))
+                  panel.levelplot(...)
+              })
+
+p <- p + layer(sp.polygons(sp, lwd=1))##, fill="lightgrey"))
+
+pname <- file.path(file.path("doc/whea_gaez_potential_yield.png"))
+trellis.device(device="png", width=9, height=4, units="in", res=320, file=pname, bg="transparent")
+print(p)
+pushViewport(viewport(0.52,0.030,0.5,0.15))  ## TODO
+grid.text("Yield (t/ha)", gp=gpar(cex=1.25, font=1, col="black"))
+dev.off()
+
+## population density
+## ##################
+
+fs = list.files("data/SSP Population Projections", pattern="^ssp[0-9]{1}_[0-9]{4}_dens_5m.tif$", full.names=TRUE)
+st =
+    stack(fs) %>% unstack %>%
+    lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn))
+
+## mx = max(cellStats(st, "max"))
+
+## for (i in 1:length(st)) {
+##     r = st[[i]]
+##     r[is.nan(r)] = 0
+##     st[[i]] = r
+## }
+
+st = stack(st)
+## st[st == 0] = NA
+## st[st > 20000] = 20000
+mx = max(cellStats(st, "max"))
+
+## p = myfun(st, layout=c(5,2), at=seq(0,mx,length=101))
+p = levelplot(st,
+              margin=FALSE,
+              xlab=NULL,
+              ylab=NULL,
+              par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5)), background=list(col="transparent")),
+              par.strip.text=list(cex=1.25),
+              names.attr=paste("SSP2", seq(2010,2100,10)),
+              col.regions=viridis(101, direction=-1),
+              at = seq(0,mx,length=101),
+              layout=c(5,2),
+              scales=list(draw=TRUE, cex=1.25),
+              colorkey=list(space="bottom",
+                            width=1,
+                            at=seq(0,mx,length.out=101),
+                            labels=list(at=seq(0,20000,4000),
+                                        labels=seq(0,20000,4000), cex=1.25), tck=0),
+              panel=function(...) {
+                  grid.rect(gp=gpar(col=NA, fill="white"))
+                  panel.levelplot(...)
+              })
+
+p <- p + layer(sp.polygons(sp, lwd=1))
+
+pname <- file.path(file.path("doc/ssp2_popdens.png"))
+trellis.device(device="png", width=9, height=5.6, units="in", res=320, file=pname, bg="transparent")
+print(p)
+pushViewport(viewport(0.52,0.030,0.5,0.15))  ## TODO
+grid.text("Population density (people/km2)", gp=gpar(cex=1.25, font=1, col="black"))
+dev.off()
+
+## land use (from GCAMLU)
+## ######################
+
+## TODO
+
+x = read.csv("/home/simon/projects/GCAMLU/Outputs/GCAMref/Spatial_LU/2010_LU.csv")
+coords = x[,c("Loncoord","Latcoord")] %>% setNames(c("x","y"))
+coords = SpatialPoints(coords=coords, proj4string=CRS("+proj=longlat +datum=WGS84"))
+template = raster(xmn=-180, xmx=180, ymn=-90, ymx=90, nrow=720, ncol=1440)
+
+years = c(2010,2020,2030,2040,2050,2060,2070,2080,2090,2100)
+data = vector(mode="list", length=length(years))
+for (i in 1:length(years)) {
+    xx = read.csv(file.path("/home/simon/projects/GCAMLU/Outputs/GCAMref/Spatial_LU", paste0(years[i], "_LU.csv")))
+    r = template
+    r[coords] = x$crops
+    data[[i]] = r
+}
+
+data = stack(data) %>% crop(india_ext) %>% `*`(india_rgn) %>% `*`(1000 * 1000 / 10000)
+
+p = levelplot(data,
+              margin=FALSE,
+              xlab=NULL,
+              ylab=NULL,
+              par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5)), background=list(col="transparent"), layout.widths=list(right.padding=1)),
+              par.strip.text=list(cex=1.25),
+              names.attr=as.character(seq(2010,2100,10)),
+              col.regions=viridis(91, direction=-1),
+              layout=c(5,2),
+              scales=list(draw=TRUE, cex=1.25),
+              colorkey=list(space="bottom",
+                            width=1,
+                            at=seq(0,90000,length.out=91),
+                            labels=list(at=seq(0,80000,10000),
+                                        labels=seq(0,80000,10000), cex=1.25), tck=0),
+              panel=function(...) {
+                  grid.rect(gp=gpar(col=NA, fill="white"))
+                  panel.levelplot(...)
+              })
+
+p <- p + layer(sp.polygons(sp, lwd=1))##, fill="lightgrey"))
+
+pname <- file.path(file.path("doc/gcamlu_cropland_area.png"))
+trellis.device(device="png", width=9, height=5.6, units="in", res=320, file=pname, bg="transparent")
+print(p)
+pushViewport(viewport(0.52,0.030,0.5,0.15))  ## TODO
+grid.text("Area (Ha)", gp=gpar(cex=1.25, font=1, col="black"))
+dev.off()
+
 
 
 
@@ -89,6 +358,70 @@ p
 
 
 ## not used:
+
+## ## rice, irrigated
+## ## ###############
+## fs = list.files("data/output", "INDIA_RICE_KHARIF_IRRI_[0-9]{4}.tif", full.names=TRUE)[c(1,3,5,7,9,11,13,15,17,19)]
+## p = myfun(stack(fs), layout=c(4,3))
+## p <- p + layer(sp.polygons(sp, lwd=1))
+
+## pname <- file.path(file.path("doc/rice_sim.png"))
+## trellis.device(device="png", width=12, height=12, units="in", res=320, file=pname)
+## print(p)
+## pushViewport(viewport(0.52,0.015,0.5,0.07))  ## TODO
+## grid.text("Area (Ha)", gp=gpar(cex=0.8, font=1, col="black"))
+## dev.off()
+
+## ## rice (physical area, yield)
+## ## ###########################
+
+## rice_phys =
+##     get_mapspam_data("rice", mapspam_path, "physical_area", suffix=suffix) %>%
+##     lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>% `[`(c(2,4,5,6)) %>% stack
+
+## p = myfun(rice_phys, layout=c(4,1))
+
+## pname <- file.path(file.path("doc/rice_mapspam_physical_area.png"))
+## trellis.device(device="png", width=12, height=6, units="in", res=320, file=pname)
+## print(p)
+## pushViewport(viewport(0.52,0.015,0.5,0.07))  ## TODO
+## grid.text("Area (Ha)", gp=gpar(cex=0.8, font=1, col="black"))
+## dev.off()
+
+## rice_yield =
+##     get_mapspam_data("rice", mapspam_path, "yield", suffix=suffix) %>%
+##     lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=sum) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>% `[`(c(2,4,5,6)) %>% stack
+
+## p = myfun(rice_yield, layout=c(4,1))
+
+## pname <- file.path(file.path("doc/rice_mapspam_yield.png"))
+## trellis.device(device="png", width=12, height=6, units="in", res=320, file=pname)
+## print(p)
+## pushViewport(viewport(0.52,0.015,0.5,0.07))  ## TODO
+## grid.text("Yield (kg/ha)", gp=gpar(cex=0.8, font=1, col="black"))
+## dev.off()
+
+## ## rice (potential yield)
+## ## ######################
+
+## rice_potyld_w = get_gaez_potyld_data("ricw", gaez_path, suffix=suffix)
+## rice_potyld_d = get_gaez_potyld_data("ricd", gaez_path, suffix=suffix)
+
+## rice_potyld =
+##     c(rice_potyld_w[1:2], rice_potyld_d[1:3]) %>%
+##     lapply(FUN=function(x) x %>% { if(fact > 1) raster::aggregate(x=., fact=fact, fun=mean) else . } %>% crop(india_ext) %>% `*`(india_rgn)) %>%
+##     `[`(c(1,1,3,3,4,4)) %>%
+##     setNames(c("total","irri","rain","rain_h","rain_l","rain_s")) %>%
+##     `[`(c(2,4,5,6)) %>% stack
+
+## p = myfun(rice_potyld, layout=c(4,1))
+
+## pname <- file.path(file.path("doc/rice_gaez_potential_yield.png"))
+## trellis.device(device="png", width=12, height=6, units="in", res=320, file=pname)
+## print(p)
+## pushViewport(viewport(0.52,0.015,0.5,0.07))  ## TODO
+## grid.text("Yield (kg/ha)", gp=gpar(cex=0.8, font=1, col="black"))
+## dev.off()
 
 ## ## create bounding box for India
 ## east  <- 100  ## India bounding box
@@ -113,14 +446,14 @@ p
 ## ##               margin=FALSE,
 ## ##               xlab=NULL,
 ## ##               ylab=NULL,
-## ##               par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
+## ##               par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
 ## ##               par.strip.text=list(cex=0.6),
 ## ##               col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "Blues"))(11),
 ## ##               at=seq(0,10000,length=11),
 ## ##               scales=list(draw=TRUE, cex=0.6),
 ## ##               colorkey=list(space="bottom", width=0.75, labels=list(cex=0.6), tck=0))
 
-## ## p <- p + layer(sp.polygons(world, lwd=0.5))
+## ## p <- p + layer(sp.polygons(world, lwd=1))
 ## ## ## p
 
 ## ## library(grid)
@@ -141,14 +474,14 @@ p
 ## ##               margin=FALSE,
 ## ##               xlab=NULL,
 ## ##               ylab=NULL,
-## ##               par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
+## ##               par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
 ## ##               par.strip.text=list(cex=0.6),
 ## ##               col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "PuBuGn"))(11),
 ## ##               at=seq(0,10000,length=11),
 ## ##               scales=list(draw=TRUE, cex=0.6),
 ## ##               colorkey=list(space="bottom", width=0.75, labels=list(cex=0.6), tck=0))
 
-## ## p <- p + layer(sp.polygons(world, lwd=0.5))
+## ## p <- p + layer(sp.polygons(world, lwd=1))
 ## ## ## p
 
 ## ## library(grid)
@@ -170,14 +503,14 @@ p
 ## ##               margin=FALSE,
 ## ##               xlab=NULL,
 ## ##               ylab=NULL,
-## ##               par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
+## ##               par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
 ## ##               par.strip.text=list(cex=0.6),
 ## ##               col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(11),
 ## ##               at=seq(0,1,length=11),
 ## ##               scales=list(draw=TRUE, cex=0.6),
 ## ##               colorkey=list(space="bottom", width=0.75, labels=list(cex=0.6), tck=0))
 
-## ## p <- p + layer(sp.polygons(world, lwd=0.5))
+## ## p <- p + layer(sp.polygons(world, lwd=1))
 ## ## ## p
 
 ## ## library(grid)
@@ -211,14 +544,14 @@ p
 ##               margin=FALSE,
 ##               xlab=NULL,
 ##               ylab=NULL,
-##               par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
+##               par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
 ##               par.strip.text=list(cex=0.8),
 ##               col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "PuBuGn"))(11),
 ##               at=seq(0,10000,length=11),
 ##               scales=list(draw=TRUE, cex=0.8),
 ##               colorkey=list(space="bottom", width=0.75, labels=list(cex=0.8), tck=0))
 
-## p <- p + layer(sp.polygons(sp, lwd=0.5))
+## p <- p + layer(sp.polygons(sp, lwd=1))
 
 ## library(grid)
 ## pname <- file.path(file.path("/home/simon/Dropbox/wheat_sim.png"))
@@ -243,14 +576,14 @@ p
 ##               margin=FALSE,
 ##               xlab=NULL,
 ##               ylab=NULL,
-##               par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
+##               par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
 ##               par.strip.text=list(cex=0.8),
 ##               col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "PuBuGn"))(11),
 ##               at=seq(0,10000,length=11),
 ##               scales=list(draw=TRUE, cex=0.8),
 ##               colorkey=list(space="bottom", width=0.75, labels=list(cex=0.8), tck=0))
 
-## p <- p + layer(sp.polygons(sp, lwd=0.5))
+## p <- p + layer(sp.polygons(sp, lwd=1))
 
 ## library(grid)
 ## pname <- file.path(file.path("/home/simon/Dropbox/rice_sim.png"))
@@ -268,14 +601,14 @@ p
 ##               margin=FALSE,
 ##               xlab=NULL,
 ##               ylab=NULL,
-##               par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
+##               par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
 ##               par.strip.text=list(cex=0.8),
 ##               col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "Blues"))(101),
 ##               ## at=seq(0,10000,length=101),
 ##               scales=list(draw=TRUE, cex=0.8),
 ##               colorkey=list(space="bottom", width=0.75, labels=list(cex=0.8), tck=0))
 
-## p <- p + layer(sp.polygons(sp, lwd=0.5))
+## p <- p + layer(sp.polygons(sp, lwd=1))
 
 ## library(grid)
 ## pname <- file.path(file.path("/home/simon/Dropbox/wheat_prod_mapspam.png"))
@@ -289,14 +622,14 @@ p
 ##               margin=FALSE,
 ##               xlab=NULL,
 ##               ylab=NULL,
-##               par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
+##               par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
 ##               par.strip.text=list(cex=0.8),
 ##               col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "Blues"))(101),
 ##               ## at=seq(0,10000,length=101),
 ##               scales=list(draw=TRUE, cex=0.8),
 ##               colorkey=list(space="bottom", width=0.75, labels=list(cex=0.8), tck=0))
 
-## p <- p + layer(sp.polygons(sp, lwd=0.5))
+## p <- p + layer(sp.polygons(sp, lwd=1))
 
 ## library(grid)
 ## pname <- file.path(file.path("/home/simon/Dropbox/rice_prod_mapspam.png"))
@@ -313,14 +646,14 @@ p
 ##               margin=FALSE,
 ##               xlab=NULL,
 ##               ylab=NULL,
-##               par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
+##               par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
 ##               par.strip.text=list(cex=0.8),
 ##               col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(101),
 ##               ## at=seq(0,10000,length=101),
 ##               scales=list(draw=TRUE, cex=0.8),
 ##               colorkey=list(space="bottom", width=0.75, labels=list(cex=0.8), tck=0))
 
-## p <- p + layer(sp.polygons(sp, lwd=0.5))
+## p <- p + layer(sp.polygons(sp, lwd=1))
 
 ## library(grid)
 ## pname <- file.path(file.path("/home/simon/Dropbox/wheat_suit.png"))
@@ -337,14 +670,14 @@ p
 ##               margin=FALSE,
 ##               xlab=NULL,
 ##               ylab=NULL,
-##               par.settings=list(axis.line=list(lwd=0.5), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
+##               par.settings=list(axis.line=list(lwd=1), strip.background=list(col="transparent"), strip.border=list(col="transparent"), axis.components=list(left=list(tck=0.5), right=list(tck=0.5), top=list(tck=0.5), bottom=list(tck=0.5))),
 ##               par.strip.text=list(cex=0.8),
 ##               col.regions=colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(101),
 ##               ## at=seq(0,10000,length=101),
 ##               scales=list(draw=TRUE, cex=0.8),
 ##               colorkey=list(space="bottom", width=0.75, labels=list(cex=0.8), tck=0))
 
-## p <- p + layer(sp.polygons(sp, lwd=0.5))
+## p <- p + layer(sp.polygons(sp, lwd=1))
 
 ## library(grid)
 ## pname <- file.path(file.path("/home/simon/Dropbox/rice_suit.png"))

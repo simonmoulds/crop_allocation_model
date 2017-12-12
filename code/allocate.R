@@ -59,7 +59,16 @@ init_suit_mat =
     select(-(cell:input)) %>%
     mutate_all(funs(replace(., is.na(.), 0))) %>%
     as.matrix
-    
+
+init_potyld_mat = 
+    readRDS("data/crop_potyld_df.rds") %>%
+    filter(input %in% input_levels) %>%
+    select(-(cell:input)) %>%
+    mutate_all(funs(replace(., is.na(.), 0))) %>%
+    as.matrix
+
+popn_df = readRDS("data/popn_df.rds")
+
 ## total suitability is the maximum of biophysical suitability from
 ## GAEZ and neighbourhood suitability
 init_tsuit_mat =
@@ -87,6 +96,7 @@ total_area_mat = init_total_area_mat
 yield_mat = init_yield_mat
 nb_mat = init_nb_mat
 suit_mat = init_suit_mat
+potyld_mat = init_potyld_mat
 
 ## time = time[1:3]
 
@@ -97,8 +107,13 @@ set.seed(18384)
 
 for (i in 2:length(time)) {    
 
-    tsuit_mat = pmax(nb_mat, suit_mat) ## TODO: update this, add neighbourhood rule
-    
+    popdens = rep(popn_df[,i], each=(n_season * n_input))
+    tsuit_mat = (suit_mat >= 1) * popdens * potyld_mat
+    for (j in 1:ncol(tsuit_mat)) {
+        x = tsuit_mat[,i]
+        tsuit_mat[,i] = x / max(x)
+    }
+        
     ## check dimensions etc.
     if (!isTRUE(all.equal(colnames(dmd), colnames(area_mat), colnames(total_area_mat), colnames(yield_mat)))) {
         stop()
@@ -135,6 +150,7 @@ for (i in 2:length(time)) {
             res = allocate(area_mat,       ## crop_area
                            yield_mat,      ## crop_yield
                            suit_mat,       ## crop_suit
+                           nb_mat,
                            total_area_mat, ## total_crop_area
                            cropland_area,  ## cropland_area
                            cell_area,      ## cell_area
@@ -147,7 +163,7 @@ for (i in 2:length(time)) {
                            rand_min,       ## rand_min
                            rand_max,       ## rand_max
                            1000,           ## tol
-                           100000)         ## maxiter
+                           500000)         ## maxiter
 
             ## get new values for subsequent crop
             area_mat = res[["area"]]
@@ -165,6 +181,7 @@ for (i in 2:length(time)) {
             res = allocate(area_mat,       ## crop_area
                            yield_mat,      ## crop_yield
                            suit_mat,       ## crop_suit
+                           nb_mat,
                            total_area_mat, ## total_crop_area
                            cropland_area,  ## cropland_area
                            cell_area,      ## cell_area

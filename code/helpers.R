@@ -55,7 +55,7 @@ get_mapspam_data = function(crop, path, what, suffix, ...) {
         stop()
     }
 
-    if (suffix == "_ll") suffix = ""
+    ## if (suffix == "_ll") suffix = ""
     
     out =
         list(total=raster(file.path(path, paste0("SPAM2005V3r1_global_", ind, "_TA_", toupper(crop), "_A", suffix, ".tif"))),
@@ -69,16 +69,43 @@ get_mapspam_data = function(crop, path, what, suffix, ...) {
 
 get_gaez_suit_data = function(crop, path, suffix, ...) {
 
-    input_levels = c("h_suhi", ## high input, irrigated
-                     "i_suii", ## intermediate input, irrigated
-                     "h_suhr", ## high input, rainfed
-                     "i_suir", ## intermediate input, rainfed
-                     "l_sulr") ## low input, rainfed
+    input_levels = c("h_schi", ## high input, irrigated
+                     "i_scii", ## intermediate input, irrigated
+                     "h_schr", ## high input, rainfed
+                     "i_scir", ## intermediate input, rainfed
+                     "l_sclr") ## low input, rainfed
+    ## input_levels = c("h_suhi", ## high input, irrigated
+    ##                  "i_suii", ## intermediate input, irrigated
+    ##                  "h_suhr", ## high input, rainfed
+    ##                  "i_suir", ## intermediate input, rainfed
+    ##                  "l_sulr") ## low input, rainfed
     out = list()
     count = 0
     for (i in 1:length(input_levels)) {
         level = input_levels[i]
         f = paste0("res03_crav6190", level, "_", crop, suffix, ".tif")
+        if (file.exists(file.path(path, f))) {
+            count = count + 1
+            r = raster(file.path(path, f))
+            out[[level]] = r
+        }
+    }
+    if (count == 0) {
+        stop("no files available for the supplied crop")
+    }
+    out
+}
+
+get_gaez_potyld_data = function(crop, path, suffix, ...) {
+
+    ## high/intermediate irrigated, high/intermediate/low rainfed
+    input_levels = paste0(c("h","i","h","i","l"), "_", crop, c("000a","000a","150b","150b","150b"))
+
+    out = list()
+    count = 0
+    for (i in 1:length(input_levels)) {
+        level = input_levels[i]
+        f = paste0("res02_crav6190", level, "_yld", suffix, ".tif")
         if (file.exists(file.path(path, f))) {
             count = count + 1
             r = raster(file.path(path, f))
