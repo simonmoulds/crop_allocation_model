@@ -23,212 +23,6 @@ NumericVector sum_interval(NumericVector x, int interval) {
 }
 
 // [[Rcpp::export]]
-NumericVector calculate_changeC(NumericMatrix area, NumericMatrix area1, NumericMatrix yield, NumericVector demand) {
-
-  int nrow = area.nrow(), ncol = area.ncol();
-  NumericMatrix prod_change(nrow,ncol);
-  NumericVector demand1 = clone(demand);
-  
-  for (int i = 0; i < nrow; i++) {
-    for (int j = 0; j < ncol; j++) {
-      prod_change(i,j) = (area1(i,j) - area(i,j)) * yield(i,j);
-    }
-  }
-
-  NumericVector total_prod_change = colSums(prod_change);
-  for (int i = 0; i < ncol; i++) {
-    demand1[i] = demand[i] - total_prod_change[i];
-  }
-
-  return demand1;
-}
-
-// [[Rcpp::export]]
-NumericMatrix get_total_areaC(NumericMatrix x, int n_season, int n_input) {
-
-  int nrow = x.nrow(), ncol = x.ncol();
-  int n_cell = nrow / (n_season * n_input);
-  int n_cell_input = n_cell * n_input;
-  
-  NumericMatrix out(n_season,ncol);
-  for (int i = 0; i < n_season; i++) {
-    NumericMatrix xx(n_cell_input,ncol);
-    for (int j = 0; j < n_cell; j++) {
-      for (int k = 0; k < n_input; k++) {
-	int ix1 = j * n_input + k;
-	int ix2 = j * n_season * n_input + (i * n_input) + k;
-	xx(ix1,_) = x(ix2,_);
-      }
-    }
-    out(i,_) = colSums(xx);
-  }
-  return out;
-}
-
-// [[Rcpp::export]]
-NumericVector subcolumn(NumericMatrix x, int row1, int row2, int col) {
-  if (col >= x.ncol()) {
-    stop("stop");
-  }
-
-  if (row2 >= x.nrow()) {
-    stop("stop");
-  }
-
-  if (row1 > row2) {
-    stop("stop");
-  }
-  
-  NumericVector xx = x(_,col);
-  return xx[Range(row1, row2)];
-}
-
-// [[Rcpp::export]]
-IntegerVector order_(NumericVector x, bool descending) {
-  if (is_true(any(duplicated(x)))) {
-    Rf_warning("There are duplicates in 'x'; order not guaranteed to match that of R's base::order");
-  }
-  NumericVector sorted = clone(x).sort(descending);
-  return match(sorted, x);
-}
-
-// [[Rcpp::export]]
-NumericMatrix intensify(NumericMatrix area, NumericMatrix suit, NumericMatrix yield, NumericVector demand, double target_intensification, LogicalVector crop_ix_logical, int n_cell, int n_season, int n_input, NumericVector cell_area, double fact, int no_chng_count_max) {
-
-  // function to intensify production
-  IntegerVector a = seq(0, demand.size()-1);
-  IntegerVector crop_ix_tmp = a[crop_ix_logical];
-  int crop_ix = crop_ix_tmp[0];
-  double target_demand = demand[crop_ix] * target_intensification;
-  NumericMatrix area1 = clone(area);
-
-  // do we need to put this in the do { ... } loop?
-  // what is a better way of doing this?
-  NumericVector max_suit(n_cell);
-  for (int i = 0; i < n_cell; i++) {
-    int start_row_ix = i * n_season * n_input;
-    int end_row_ix = start_row_ix + (n_season * n_input) - 1;
-    NumericVector suit_v = subcolumn(suit, start_row_ix, end_row_ix, crop_ix);
-    NumericVector area_v = subcolumn(area, start_row_ix, end_row_ix, crop_ix);
-    double max_suit_v = Rcpp::max(suit_v);
-    double max_area_v = Rcpp::max(area_v);
-    if ((max_suit_v > 0) && (max_area_v > 0)) {
-      NumericVector a = suit_v[suit_v > 0];
-      max_suit[i] = a[0];
-    } else {
-      max_suit[i] = 0;
-    }
-  }
-
-  // https://stackoverflow.com/questions/21609934/ordering-permutation-in-rcpp-i-e-baseorder
-  IntegerVector ordr = order_(max_suit, true);
-  int index = 0;
-  double total_prod_chng = 0;
-  int no_chng_count = 0;
-
-  do {
-
-    int ix = ordr[index];
-    
-    for (int i = 0; i < n_season; i++) {
-
-      int start_row_ix = ix * n_season * n_input + i * n_input;
-      int end_row_ix = start_row_ix + (n_input - 1);
-
-      for (int j = 0; j < (n_input - 1); j++) {
-
-	int hi_ix = end_row_ix - (j+1);
-	int lo_ix = hi_ix + 1;
-
-	double higher_intensity_area = area1(hi_ix,crop_ix);
-	double lower_intensity_area = area1(lo_ix,crop_ix);
-
-	double prod_chng, area_chng;
-	
-	if (lower_intensity_area > 0) {
-	  
-	  double area_chng0 = Rcpp::min(NumericVector::create(lower_intensity_area, (cell_area[ix] * fact)));
-	  double prod_chng0 = area_chng0 * (yield(hi_ix,crop_ix) - yield(lo_ix,crop_ix));
-
-	  if (prod_chng0 > 0) {
-
-	    if (prod_chng0 < target_demand) {
-	      prod_chng = prod_chng0;
-	      area_chng = area_chng0;
-	    } else {
-	      prod_chng = target_demand;
-	      area_chng = prod_chng / (yield(hi_ix,crop_ix) - yield(lo_ix,crop_ix));
-	    }
-
-	  } else {
-	    prod_chng = 0;
-	    area_chng = 0;
-	  }
-	  
-	} else {
-	  prod_chng = 0;
-	  area_chng = 0;
-	}
-
-	// Rprintf("%f\n", prod_chng);
-	
-	area1(hi_ix,crop_ix) += area_chng;
-	area1(lo_ix,crop_ix) -= area_chng;
-
-	target_demand -= prod_chng;
-	// Rprintf("%f\n", target_demand);
-	
-	total_prod_chng += prod_chng;
-	
-      }
-    }
-
-    if (index == (n_cell - 1)) {
-      index = 0;
-      if (total_prod_chng == 0) {
-	no_chng_count++;
-      }
-      total_prod_chng = 0;
-    } else {
-      index++;
-    }
-
-  } while ((target_demand > 0) && (no_chng_count <= no_chng_count_max));
-      
-  return area1;
-
-}
-
-//                 area_mat[hi_ix,crop_ix] = area_mat[hi_ix,crop_ix] + area_chng
-//                 area_mat[lo_ix,crop_ix] = area_mat[lo_ix,crop_ix] - area_chng
-
-//                 dmd[crop_ix] = dmd[crop_ix] - prod_chng
-//                 target_dmd = target_dmd - prod_chng
-//                 total_prod_chng = total_prod_chng + prod_chng
-                
-//             }
-//         }
-
-//         if (index == n_cell) {
-//             index = 0
-//             if (total_prod_chng == 0) {
-//                 no_chng_count = no_chng_count + 1
-//             }
-//             total_prod_chng = 0
-//         }
-        
-//         ## continue until target is met or we know that
-//         ## the target cannot be met
-//         if ((target_dmd == 0) || no_chng_count > no_chng_count_max) {
-//             if (target_dmd == 0) print("Target demand met")
-//             if (no_chng_count > no_chng_count_max) print("Cannot meet target demand: returning early")
-//             break()
-//         }
-//     }
-//     area_mat
-// }
-			
-// [[Rcpp::export]]
 NumericMatrix allocate_expansionC(NumericMatrix area, NumericMatrix suit, NumericMatrix nb, int crop_ix, double cropland_area, double cell_area, double fact, double rand_min, double rand_max) {
 
   // Function to allocate cropland expansion for the case where a cell
@@ -393,6 +187,48 @@ NumericMatrix allocate_intensificationC(NumericMatrix area, NumericMatrix suit, 
   return area1;
 }
 
+// [[Rcpp::export]]
+NumericVector calculate_changeC(NumericMatrix area, NumericMatrix area1, NumericMatrix yield, NumericVector demand) {
+
+  int nrow = area.nrow(), ncol = area.ncol();
+  NumericMatrix prod_change(nrow,ncol);
+  NumericVector demand1 = clone(demand);
+  
+  for (int i = 0; i < nrow; i++) {
+    for (int j = 0; j < ncol; j++) {
+      prod_change(i,j) = (area1(i,j) - area(i,j)) * yield(i,j);
+    }
+  }
+
+  NumericVector total_prod_change = colSums(prod_change);
+  for (int i = 0; i < ncol; i++) {
+    demand1[i] = demand[i] - total_prod_change[i];
+  }
+
+  return demand1;
+}
+
+// [[Rcpp::export]]
+NumericMatrix get_total_areaC(NumericMatrix x, int n_season, int n_input) {
+
+  int nrow = x.nrow(), ncol = x.ncol();
+  int n_cell = nrow / (n_season * n_input);
+  int n_cell_input = n_cell * n_input;
+  
+  NumericMatrix out(n_season,ncol);
+  for (int i = 0; i < n_season; i++) {
+    NumericMatrix xx(n_cell_input,ncol);
+    for (int j = 0; j < n_cell; j++) {
+      for (int k = 0; k < n_input; k++) {
+	int ix1 = j * n_input + k;
+	int ix2 = j * n_season * n_input + (i * n_input) + k;
+	xx(ix1,_) = x(ix2,_);
+      }
+    }
+    out(i,_) = colSums(xx);
+  }
+  return out;
+}
 
 // [[Rcpp::export]]
 List allocate_incr(NumericMatrix crop_area0, NumericMatrix crop_yield, NumericMatrix crop_suit, NumericMatrix crop_nb, NumericMatrix total_crop_area, NumericVector cropland_area, NumericVector cell_area, NumericVector demand0, int crop_ix, IntegerVector decr_ix, int n_season, int n_input, double fact, double rand_min, double rand_max, double tol, int maxiter) {

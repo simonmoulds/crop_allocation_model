@@ -24,16 +24,16 @@ aggregate_dmd = function(x, ...) {
 
 time = seq(2005, 2100, by=5)
 dmd = readRDS("data/gcam_reference_demand.rds") %>% as.data.frame %>% aggregate_dmd
-## alloc = read.table("data/output/allocated_area.txt", sep=" ", header=TRUE) %>% aggregate_dmd
+alloc = read.table("data/output/allocated_area.txt", sep=" ", header=TRUE) %>% aggregate_dmd
 
-## names(alloc) = paste0(names(alloc), "_")
-## x = cbind(data.frame(time=time), dmd, alloc) %>%
-##     gather(crop, production, -time) %>%
-##     mutate(crop=factor(crop))
-
-x = cbind(data.frame(time=time), dmd) %>%
+names(alloc) = paste0(names(alloc), "_")
+x = cbind(data.frame(time=time), dmd, alloc) %>%
     gather(crop, production, -time) %>%
     mutate(crop=factor(crop))
+
+## x = cbind(data.frame(time=time), dmd) %>%
+##     gather(crop, production, -time) %>%
+##     mutate(crop=factor(crop))
 
 ## cols=rep(rainbow(10), each=2)
 cols=rep(rainbow(10))
@@ -41,13 +41,12 @@ p = xyplot(production~time,
            group=crop,
            data=x,
            par.settings=list(background = list(col = "transparent")),
-           ## trellis.par.set(background = list(col = "transparent")),
-           type="l",
-           lty=1,
-           ## type=rep(c("l","p"), 10),
-           ## lty=rep(c(1,0), 10),
-           lwd=5,
-           ## pch=rep(c(NA,1), 10),
+           ## type="l",
+           ## lty=1,
+           type=rep(c("l","p"), 10),
+           lty=rep(c(1,0), 10),
+           ## lwd=5,
+           pch=rep(c(NA,1), 10),
            col=cols,
            xlab=list("Year", cex=1.5),
            ylab=list("Production (tonnes)", cex=1.5),
@@ -82,7 +81,7 @@ sp = getRgshhsMap(fn = system.file("share/gshhs_c.b", package= "maptools"), xlim
 ## wheat, irrigated
 ## ################
 
-fs = list.files("data/output", "INDIA_WHEA_RABI_IRRI_[0-9]{4}.tif", full.names=TRUE)##[c(1,3,5,7,9,11,13,15,17,19)]
+fs = list.files("data/output", "INDIA_RICE_KHARIF_IRRI_[0-9]{4}.tif", full.names=TRUE)##[c(1,3,5,7,9,11,13,15,17,19)]
 
 st = stack(fs)
 

@@ -1389,7 +1389,6 @@ rcof_nb = get_mapspam_neighb(rcof_phys, w=nbw, fun=mean, na.rm=TRUE, pad=TRUE)
 print("interpolating robusta coffee yield...")
 rcof_yield = interpolate_yield(rcof_yield, rcof_suit)
 
-
 ## ======================================
 ## population density
 ## ======================================
@@ -1744,139 +1743,271 @@ gcam_area %<>% spread(land.allocation, area)
 
 ## calibrate GCAM data so that it matches MapSPAM in 2005
 
-## rice
-total_production_fun = function(area, yield, ...) {
-    area_v = getValues(area)
-    yield_v = getValues(yield)
-    prod_v = area_v * yield_v
-    sum(prod_v, na.rm=TRUE)
+stop()
+
+## total_production_fun = function(area, yield, ...) {
+##     area_v = getValues(area)
+##     yield_v = getValues(yield)
+##     prod_v = area_v * yield_v
+##     sum(prod_v, na.rm=TRUE)
+## }
+
+total_production_fun = function(area_df, yield_df, crop, input_levels=c("irri","rain_h","rain_l","rain_s"), ...) {
+    area_df %<>% filter(input %in% input_levels)
+    yield_df %<>% filter(input %in% input_levels)
+    area_v = area_df[,colnames(area_df) %in% crop] %>% `[<-`(. < 0, 0)
+    yield_v = yield_df[,colnames(yield_df) %in% crop] %>% `[<-`(. < 0, 0)
+    prod = area_v * yield_v
+    sum(prod, na.rm=TRUE)
 }
 
-rice_sf = total_production_fun(rice_harv[["total"]], rice_yield[["total"]]) / 1e3 / 1e6 / gcam_prod[["Rice"]][2]
+## rice
+rice_sf = total_production_fun(area_df, yield_df, "rice") / 1e6 / gcam_prod[["Rice"]][2]
 
-rice_yield_sf = mean(getValues(rice_yield[["total"]]), na.rm=TRUE) / 1000 / gcam_yield[["Rice"]][2]
+## rice_sf = total_production_fun(rice_harv[["total"]], rice_yield[["total"]]) / 1e3 / 1e6 / gcam_prod[["Rice"]][2]
+
+## rice_yield_sf = mean(getValues(rice_yield[["total"]]), na.rm=TRUE) / 1000 / gcam_yield[["Rice"]][2]
 
 ## wheat
-wheat_sf = total_production_fun(whea_harv[["total"]], whea_yield[["total"]]) / 1e3 / 1e6 / gcam_prod[["Wheat"]][2]
+wheat_sf = total_production_fun(area_df, yield_df, "whea") / 1e6 / gcam_prod[["Wheat"]][2]
 
-wheat_yield_sf = mean(getValues(whea_yield[["total"]]), na.rm=TRUE)
+## wheat_sf = total_production_fun(whea_harv[["total"]], whea_yield[["total"]]) / 1e3 / 1e6 / gcam_prod[["Wheat"]][2]
+
+## wheat_yield_sf = mean(getValues(whea_yield[["total"]]), na.rm=TRUE)
 
 ## maize/corn
-corn_sf = total_production_fun(maiz_harv[["total"]], maiz_yield[["total"]]) / 1e3 / 1e6 / gcam_prod[["Corn"]][2]
+corn_sf = total_production_fun(area_df, yield_df, "maiz") / 1e6 / gcam_prod[["Corn"]][2]
 
-maiz_yield_vals = getValues(maiz_yield[["total"]]) %>% `[`(. > 0) %>% mean(na.rm=TRUE)
-corn_yield_sf = mean(getValues(maiz_yield[["total"]]), na.rm=TRUE)
+## corn_sf = total_production_fun(maiz_harv[["total"]], maiz_yield[["total"]]) / 1e3 / 1e6 / gcam_prod[["Corn"]][2]
+
+## maiz_yield_vals = getValues(maiz_yield[["total"]]) %>% `[`(. > 0) %>% mean(na.rm=TRUE)
+## corn_yield_sf = mean(getValues(maiz_yield[["total"]]), na.rm=TRUE)
 
 ## other cereals
 ocer_total =
-    sum(c(total_production_fun(barl_harv[["total"]], barl_yield[["total"]]),
-          total_production_fun(sorg_harv[["total"]], sorg_yield[["total"]]),
-          total_production_fun(pmil_harv[["total"]], pmil_yield[["total"]]),
-          total_production_fun(smil_harv[["total"]], smil_yield[["total"]]),
-          total_production_fun(ocer_harv[["total"]], ocer_yield[["total"]])), na.rm=TRUE)
-ocer_sf  = ocer_total / 1e3 / 1e6 / gcam_prod[["OtherGrain"]][2]
+    sum(c(total_production_fun(area_df, yield_df, "barl"),
+          total_production_fun(area_df, yield_df, "sorg"),
+          total_production_fun(area_df, yield_df, "pmil"),
+          total_production_fun(area_df, yield_df, "smil"),
+          total_production_fun(area_df, yield_df, "ocer")), na.rm=TRUE)
 
-ocer_barl_frac = total_production_fun(barl_harv[["total"]], barl_yield[["total"]]) / ocer_total
-ocer_sorg_frac = total_production_fun(sorg_harv[["total"]], sorg_yield[["total"]]) / ocer_total
-ocer_pmil_frac = total_production_fun(pmil_harv[["total"]], pmil_yield[["total"]]) / ocer_total
-ocer_smil_frac = total_production_fun(smil_harv[["total"]], smil_yield[["total"]]) / ocer_total
-ocer_ocer_frac = total_production_fun(ocer_harv[["total"]], ocer_yield[["total"]]) / ocer_total
+ocer_sf  = ocer_total / 1e6 / gcam_prod[["OtherGrain"]][2]
+
+ocer_barl_frac = total_production_fun(area_df, yield_df, "barl") / ocer_total
+ocer_sorg_frac = total_production_fun(area_df, yield_df, "sorg") / ocer_total
+ocer_pmil_frac = total_production_fun(area_df, yield_df, "pmil") / ocer_total
+ocer_smil_frac = total_production_fun(area_df, yield_df, "smil") / ocer_total
+ocer_ocer_frac = total_production_fun(area_df, yield_df, "ocer") / ocer_total
+
+## ocer_total =
+##     sum(c(total_production_fun(barl_harv[["total"]], barl_yield[["total"]]),
+##           total_production_fun(sorg_harv[["total"]], sorg_yield[["total"]]),
+##           total_production_fun(pmil_harv[["total"]], pmil_yield[["total"]]),
+##           total_production_fun(smil_harv[["total"]], smil_yield[["total"]]),
+##           total_production_fun(ocer_harv[["total"]], ocer_yield[["total"]])), na.rm=TRUE)
+## ocer_sf  = ocer_total / 1e3 / 1e6 / gcam_prod[["OtherGrain"]][2]
+
+## ocer_barl_frac = total_production_fun(barl_harv[["total"]], barl_yield[["total"]]) / ocer_total
+## ocer_sorg_frac = total_production_fun(sorg_harv[["total"]], sorg_yield[["total"]]) / ocer_total
+## ocer_pmil_frac = total_production_fun(pmil_harv[["total"]], pmil_yield[["total"]]) / ocer_total
+## ocer_smil_frac = total_production_fun(smil_harv[["total"]], smil_yield[["total"]]) / ocer_total
+## ocer_ocer_frac = total_production_fun(ocer_harv[["total"]], ocer_yield[["total"]]) / ocer_total
 
 ## oils
 oil_total =
-    sum(c(total_production_fun(soyb_harv[["total"]], soyb_yield[["total"]]),
-          total_production_fun(grou_harv[["total"]], grou_yield[["total"]]),
-          total_production_fun(sesa_harv[["total"]], sesa_yield[["total"]]),
-          total_production_fun(sunf_harv[["total"]], sunf_yield[["total"]]),
-          total_production_fun(rape_harv[["total"]], rape_yield[["total"]]),
-          total_production_fun(ooil_harv[["total"]], ooil_yield[["total"]])), na.rm=TRUE)
-oil_sf  = oil_total / 1e3 / 1e6 / gcam_prod[["OilCrop"]][2]
+    sum(c(total_production_fun(area_df, yield_df, "soyb"),
+          total_production_fun(area_df, yield_df, "grou"),
+          total_production_fun(area_df, yield_df, "sesa"),
+          total_production_fun(area_df, yield_df, "sunf"),
+          total_production_fun(area_df, yield_df, "rape"),
+          total_production_fun(area_df, yield_df, "ooil")), na.rm=TRUE)
 
-oil_soyb_frac = total_production_fun(soyb_harv[["total"]], soyb_yield[["total"]]) / oil_total
-oil_grou_frac = total_production_fun(grou_harv[["total"]], grou_yield[["total"]]) / oil_total
-oil_sesa_frac = total_production_fun(sesa_harv[["total"]], sesa_yield[["total"]]) / oil_total
-oil_sunf_frac = total_production_fun(sunf_harv[["total"]], sunf_yield[["total"]]) / oil_total
-oil_rape_frac = total_production_fun(rape_harv[["total"]], rape_yield[["total"]]) / oil_total
-oil_ooil_frac = total_production_fun(ooil_harv[["total"]], ooil_yield[["total"]]) / oil_total
+oil_sf  = oil_total / 1e6 / gcam_prod[["OilCrop"]][2]
+
+oil_soyb_frac = total_production_fun(area_df, yield_df, "soyb") / oil_total
+oil_grou_frac = total_production_fun(area_df, yield_df, "grou") / oil_total
+oil_sesa_frac = total_production_fun(area_df, yield_df, "sesa") / oil_total
+oil_sunf_frac = total_production_fun(area_df, yield_df, "sunf") / oil_total
+oil_rape_frac = total_production_fun(area_df, yield_df, "rape") / oil_total
+oil_ooil_frac = total_production_fun(area_df, yield_df, "ooil") / oil_total
+
+## oil_total =
+##     sum(c(total_production_fun(soyb_harv[["total"]], soyb_yield[["total"]]),
+##           total_production_fun(grou_harv[["total"]], grou_yield[["total"]]),
+##           total_production_fun(sesa_harv[["total"]], sesa_yield[["total"]]),
+##           total_production_fun(sunf_harv[["total"]], sunf_yield[["total"]]),
+##           total_production_fun(rape_harv[["total"]], rape_yield[["total"]]),
+##           total_production_fun(ooil_harv[["total"]], ooil_yield[["total"]])), na.rm=TRUE)
+## oil_sf  = oil_total / 1e3 / 1e6 / gcam_prod[["OilCrop"]][2]
+
+## oil_soyb_frac = total_production_fun(soyb_harv[["total"]], soyb_yield[["total"]]) / oil_total
+## oil_grou_frac = total_production_fun(grou_harv[["total"]], grou_yield[["total"]]) / oil_total
+## oil_sesa_frac = total_production_fun(sesa_harv[["total"]], sesa_yield[["total"]]) / oil_total
+## oil_sunf_frac = total_production_fun(sunf_harv[["total"]], sunf_yield[["total"]]) / oil_total
+## oil_rape_frac = total_production_fun(rape_harv[["total"]], rape_yield[["total"]]) / oil_total
+## oil_ooil_frac = total_production_fun(ooil_harv[["total"]], ooil_yield[["total"]]) / oil_total
 
 ## fibre
 fibre_total =
-    sum(c(total_production_fun(cott_harv[["total"]], cott_yield[["total"]]),
-          total_production_fun(ofib_harv[["total"]], ofib_yield[["total"]])), na.rm=TRUE)
-fibre_sf  = fibre_total / 1e3 / 1e6 / gcam_prod[["FiberCrop"]][2]
+    sum(c(total_production_fun(area_df, yield_df, "cott"),
+          total_production_fun(area_df, yield_df, "ofib")), na.rm=TRUE)
 
-fibre_cott_frac = total_production_fun(cott_harv[["total"]], cott_yield[["total"]]) / fibre_total
-fibre_ofib_frac = total_production_fun(ofib_harv[["total"]], ofib_yield[["total"]]) / fibre_total
+fibre_sf  = fibre_total / 1e6 / gcam_prod[["FiberCrop"]][2]
+
+fibre_cott_frac = total_production_fun(area_df, yield_df, "cott") / fibre_total
+fibre_ofib_frac = total_production_fun(area_df, yield_df, "ofib") / fibre_total
+
+## fibre_total =
+##     sum(c(total_production_fun(cott_harv[["total"]], cott_yield[["total"]]),
+##           total_production_fun(ofib_harv[["total"]], ofib_yield[["total"]])), na.rm=TRUE)
+## fibre_sf  = fibre_total / 1e3 / 1e6 / gcam_prod[["FiberCrop"]][2]
+
+## fibre_cott_frac = total_production_fun(cott_harv[["total"]], cott_yield[["total"]]) / fibre_total
+## fibre_ofib_frac = total_production_fun(ofib_harv[["total"]], ofib_yield[["total"]]) / fibre_total
 
 ## palm fruit
 palm_total =
-    sum(c(total_production_fun(cnut_harv[["total"]], cnut_yield[["total"]]),
-          total_production_fun(oilp_harv[["total"]], oilp_yield[["total"]])), na.rm=TRUE)
-palm_sf  = palm_total / 1e3 / 1e6 / gcam_prod[["PalmFruit"]][2]
+    sum(c(total_production_fun(area_df, yield_df, "cnut"),
+          total_production_fun(area_df, yield_df, "oilp")), na.rm=TRUE)
 
-palm_cnut_frac = total_production_fun(cnut_harv[["total"]], cnut_yield[["total"]]) / palm_total
-palm_oilp_frac = total_production_fun(oilp_harv[["total"]], oilp_yield[["total"]]) / palm_total
+palm_sf  = palm_total / 1e6 / gcam_prod[["PalmFruit"]][2]
+
+palm_cnut_frac = total_production_fun(area_df, yield_df, "cnut") / palm_total
+palm_oilp_frac = total_production_fun(area_df, yield_df, "oilp") / palm_total
+
+## palm_total =
+##     sum(c(total_production_fun(cnut_harv[["total"]], cnut_yield[["total"]]),g
+##           total_production_fun(oilp_harv[["total"]], oilp_yield[["total"]])), na.rm=TRUE)
+## palm_sf  = palm_total / 1e3 / 1e6 / gcam_prod[["PalmFruit"]][2]
+
+## palm_cnut_frac = total_production_fun(cnut_harv[["total"]], cnut_yield[["total"]]) / palm_total
+## palm_oilp_frac = total_production_fun(oilp_harv[["total"]], oilp_yield[["total"]]) / palm_total
 
 ## sugar crop
 sugar_total =
-    sum(c(total_production_fun(sugc_harv[["total"]], sugc_yield[["total"]]),
-          total_production_fun(sugb_harv[["total"]], sugb_yield[["total"]])), na.rm=TRUE)
-sugar_sf  = sugar_total / 1e3 / 1e6 / gcam_prod[["SugarCrop"]][2]
+    sum(c(total_production_fun(area_df, yield_df, "sugc"),
+          total_production_fun(area_df, yield_df, "sugb")), na.rm=TRUE)
 
-sugar_sugc_frac = total_production_fun(sugc_harv[["total"]], sugc_yield[["total"]]) / sugar_total
-sugar_sugb_frac = total_production_fun(sugb_harv[["total"]], sugb_yield[["total"]]) / sugar_total
+sugar_sf  = sugar_total / 1e6 / gcam_prod[["SugarCrop"]][2]
+
+sugar_sugc_frac = total_production_fun(area_df, yield_df, "sugc") / sugar_total
+sugar_sugb_frac = total_production_fun(area_df, yield_df, "sugb") / sugar_total
+
+## sugar_total =
+##     sum(c(total_production_fun(sugc_harv[["total"]], sugc_yield[["total"]]),
+##           total_production_fun(sugb_harv[["total"]], sugb_yield[["total"]])), na.rm=TRUE)
+## sugar_sf  = sugar_total / 1e3 / 1e6 / gcam_prod[["SugarCrop"]][2]
+
+## sugar_sugc_frac = total_production_fun(sugc_harv[["total"]], sugc_yield[["total"]]) / sugar_total
+## sugar_sugb_frac = total_production_fun(sugb_harv[["total"]], sugb_yield[["total"]]) / sugar_total
 
 ## root crops
 root_total =
-    sum(c(total_production_fun(pota_harv[["total"]], pota_yield[["total"]]),
-          total_production_fun(swpo_harv[["total"]], swpo_yield[["total"]]),
-          total_production_fun(yams_harv[["total"]], yams_yield[["total"]]),
-          total_production_fun(cass_harv[["total"]], cass_yield[["total"]]),
-          total_production_fun(orts_harv[["total"]], orts_yield[["total"]])), na.rm=TRUE)
-root_sf  = root_total / 1e3 / 1e6 / gcam_prod[["Root_Tuber"]][2]
+    sum(c(total_production_fun(area_df, yield_df, "pota"),
+          total_production_fun(area_df, yield_df, "swpo"),
+          total_production_fun(area_df, yield_df, "yams"),
+          total_production_fun(area_df, yield_df, "cass"),
+          total_production_fun(area_df, yield_df, "orts")), na.rm=TRUE)
 
-root_pota_frac = total_production_fun(pota_harv[["total"]], pota_yield[["total"]]) / root_total
-root_swpo_frac = total_production_fun(swpo_harv[["total"]], swpo_yield[["total"]]) / root_total
-root_yams_frac = total_production_fun(yams_harv[["total"]], yams_yield[["total"]]) / root_total
-root_cass_frac = total_production_fun(cass_harv[["total"]], cass_yield[["total"]]) / root_total
-root_orts_frac = total_production_fun(orts_harv[["total"]], orts_yield[["total"]]) / root_total
+root_sf = root_total / 1e6 / gcam_prod[["Root_Tuber"]][2]
+
+root_pota_frac = total_production_fun(area_df, yield_df, "pota") / root_total
+root_swpo_frac = total_production_fun(area_df, yield_df, "swpo") / root_total
+root_yams_frac = total_production_fun(area_df, yield_df, "yams") / root_total
+root_cass_frac = total_production_fun(area_df, yield_df, "cass") / root_total
+root_orts_frac = total_production_fun(area_df, yield_df, "orts") / root_total
+
+## root_total =
+##     sum(c(total_production_fun(pota_harv[["total"]], pota_yield[["total"]]),
+##           total_production_fun(swpo_harv[["total"]], swpo_yield[["total"]]),
+##           total_production_fun(yams_harv[["total"]], yams_yield[["total"]]),
+##           total_production_fun(cass_harv[["total"]], cass_yield[["total"]]),
+##           total_production_fun(orts_harv[["total"]], orts_yield[["total"]])), na.rm=TRUE)
+## root_sf  = root_total / 1e3 / 1e6 / gcam_prod[["Root_Tuber"]][2]
+
+## root_pota_frac = total_production_fun(pota_harv[["total"]], pota_yield[["total"]]) / root_total
+## root_swpo_frac = total_production_fun(swpo_harv[["total"]], swpo_yield[["total"]]) / root_total
+## root_yams_frac = total_production_fun(yams_harv[["total"]], yams_yield[["total"]]) / root_total
+## root_cass_frac = total_production_fun(cass_harv[["total"]], cass_yield[["total"]]) / root_total
+## root_orts_frac = total_production_fun(orts_harv[["total"]], orts_yield[["total"]]) / root_total
 
 ## misc crops
 misc_total =
-    sum(c(total_production_fun(bean_harv[["total"]], bean_yield[["total"]]),
-          total_production_fun(chic_harv[["total"]], chic_yield[["total"]]),
-          total_production_fun(pige_harv[["total"]], pige_yield[["total"]]),
-          total_production_fun(lent_harv[["total"]], lent_yield[["total"]]),
-          total_production_fun(cowp_harv[["total"]], cowp_yield[["total"]]),
-          total_production_fun(opul_harv[["total"]], opul_yield[["total"]]),
-          total_production_fun(trof_harv[["total"]], trof_yield[["total"]]),
-          total_production_fun(temf_harv[["total"]], temf_yield[["total"]]),
-          total_production_fun(bana_harv[["total"]], bana_yield[["total"]]),
-          total_production_fun(plnt_harv[["total"]], plnt_yield[["total"]]),
-          total_production_fun(acof_harv[["total"]], acof_yield[["total"]]),
-          total_production_fun(rcof_harv[["total"]], rcof_yield[["total"]]),
-          total_production_fun(coco_harv[["total"]], coco_yield[["total"]]),
-          total_production_fun(teas_harv[["total"]], teas_yield[["total"]]),
-          total_production_fun(toba_harv[["total"]], toba_yield[["total"]]),
-          total_production_fun(vege_harv[["total"]], vege_yield[["total"]])), na.rm=TRUE)
-misc_sf  = misc_total / 1e3 / 1e6 / gcam_prod[["MiscCrop"]][2]
+    sum(c(total_production_fun(area_df, yield_df, "bean"),
+          total_production_fun(area_df, yield_df, "chic"),
+          total_production_fun(area_df, yield_df, "pige"),
+          total_production_fun(area_df, yield_df, "lent"),
+          total_production_fun(area_df, yield_df, "cowp"),
+          total_production_fun(area_df, yield_df, "opul"),
+          total_production_fun(area_df, yield_df, "trof"),
+          total_production_fun(area_df, yield_df, "temf"),
+          total_production_fun(area_df, yield_df, "bana"),
+          total_production_fun(area_df, yield_df, "plnt"),
+          total_production_fun(area_df, yield_df, "acof"),
+          total_production_fun(area_df, yield_df, "rcof"),
+          total_production_fun(area_df, yield_df, "coco"),
+          total_production_fun(area_df, yield_df, "teas"),
+          total_production_fun(area_df, yield_df, "toba"),
+          total_production_fun(area_df, yield_df, "vege"),
+          total_production_fun(area_df, yield_df, "rest")), na.rm=TRUE)
 
-misc_bean_frac = total_production_fun(bean_harv[["total"]], bean_yield[["total"]]) / misc_total
-misc_chic_frac = total_production_fun(chic_harv[["total"]], chic_yield[["total"]]) / misc_total
-misc_pige_frac = total_production_fun(pige_harv[["total"]], pige_yield[["total"]]) / misc_total
-misc_lent_frac = total_production_fun(lent_harv[["total"]], lent_yield[["total"]]) / misc_total
-misc_cowp_frac = total_production_fun(cowp_harv[["total"]], cowp_yield[["total"]]) / misc_total
-misc_opul_frac = total_production_fun(opul_harv[["total"]], opul_yield[["total"]]) / misc_total
-misc_trof_frac = total_production_fun(trof_harv[["total"]], trof_yield[["total"]]) / misc_total
-misc_temf_frac = total_production_fun(temf_harv[["total"]], temf_yield[["total"]]) / misc_total
-misc_bana_frac = total_production_fun(bana_harv[["total"]], bana_yield[["total"]]) / misc_total
-misc_plnt_frac = total_production_fun(plnt_harv[["total"]], plnt_yield[["total"]]) / misc_total
-misc_acof_frac = total_production_fun(acof_harv[["total"]], acof_yield[["total"]]) / misc_total
-misc_rcof_frac = total_production_fun(rcof_harv[["total"]], rcof_yield[["total"]]) / misc_total
-misc_coco_frac = total_production_fun(coco_harv[["total"]], coco_yield[["total"]]) / misc_total
-misc_teas_frac = total_production_fun(teas_harv[["total"]], teas_yield[["total"]]) / misc_total
-misc_toba_frac = total_production_fun(toba_harv[["total"]], toba_yield[["total"]]) / misc_total
-misc_vege_frac = total_production_fun(vege_harv[["total"]], vege_yield[["total"]]) / misc_total
+misc_sf  = misc_total / 1e6 / gcam_prod[["MiscCrop"]][2]
+
+misc_bean_frac = total_production_fun(area_df, yield_df, "bean") / misc_total
+misc_chic_frac = total_production_fun(area_df, yield_df, "chic") / misc_total
+misc_pige_frac = total_production_fun(area_df, yield_df, "pige") / misc_total
+misc_lent_frac = total_production_fun(area_df, yield_df, "lent") / misc_total
+misc_cowp_frac = total_production_fun(area_df, yield_df, "cowp") / misc_total
+misc_opul_frac = total_production_fun(area_df, yield_df, "opul") / misc_total
+misc_trof_frac = total_production_fun(area_df, yield_df, "trof") / misc_total
+misc_temf_frac = total_production_fun(area_df, yield_df, "temf") / misc_total
+misc_bana_frac = total_production_fun(area_df, yield_df, "bana") / misc_total
+misc_plnt_frac = total_production_fun(area_df, yield_df, "plnt") / misc_total
+misc_acof_frac = total_production_fun(area_df, yield_df, "acof") / misc_total
+misc_rcof_frac = total_production_fun(area_df, yield_df, "rcof") / misc_total
+misc_coco_frac = total_production_fun(area_df, yield_df, "coco") / misc_total
+misc_teas_frac = total_production_fun(area_df, yield_df, "teas") / misc_total
+misc_toba_frac = total_production_fun(area_df, yield_df, "toba") / misc_total
+misc_vege_frac = total_production_fun(area_df, yield_df, "vege") / misc_total
+misc_rest_frac = total_production_fun(area_df, yield_df, "rest") / misc_total
+
+## misc_total =
+##     sum(c(total_production_fun(bean_harv[["total"]], bean_yield[["total"]]),
+##           total_production_fun(chic_harv[["total"]], chic_yield[["total"]]),
+##           total_production_fun(pige_harv[["total"]], pige_yield[["total"]]),
+##           total_production_fun(lent_harv[["total"]], lent_yield[["total"]]),
+##           total_production_fun(cowp_harv[["total"]], cowp_yield[["total"]]),
+##           total_production_fun(opul_harv[["total"]], opul_yield[["total"]]),
+##           total_production_fun(trof_harv[["total"]], trof_yield[["total"]]),
+##           total_production_fun(temf_harv[["total"]], temf_yield[["total"]]),
+##           total_production_fun(bana_harv[["total"]], bana_yield[["total"]]),
+##           total_production_fun(plnt_harv[["total"]], plnt_yield[["total"]]),
+##           total_production_fun(acof_harv[["total"]], acof_yield[["total"]]),
+##           total_production_fun(rcof_harv[["total"]], rcof_yield[["total"]]),
+##           total_production_fun(coco_harv[["total"]], coco_yield[["total"]]),
+##           total_production_fun(teas_harv[["total"]], teas_yield[["total"]]),
+##           total_production_fun(toba_harv[["total"]], toba_yield[["total"]]),
+##           total_production_fun(vege_harv[["total"]], vege_yield[["total"]]),
+##           total_production_fun(rest_harv[["total"]], rest_yield[["total"]])), na.rm=TRUE)
+## misc_sf  = misc_total / 1e3 / 1e6 / gcam_prod[["MiscCrop"]][2]
+
+## misc_bean_frac = total_production_fun(bean_harv[["total"]], bean_yield[["total"]]) / misc_total
+## misc_chic_frac = total_production_fun(chic_harv[["total"]], chic_yield[["total"]]) / misc_total
+## misc_pige_frac = total_production_fun(pige_harv[["total"]], pige_yield[["total"]]) / misc_total
+## misc_lent_frac = total_production_fun(lent_harv[["total"]], lent_yield[["total"]]) / misc_total
+## misc_cowp_frac = total_production_fun(cowp_harv[["total"]], cowp_yield[["total"]]) / misc_total
+## misc_opul_frac = total_production_fun(opul_harv[["total"]], opul_yield[["total"]]) / misc_total
+## misc_trof_frac = total_production_fun(trof_harv[["total"]], trof_yield[["total"]]) / misc_total
+## misc_temf_frac = total_production_fun(temf_harv[["total"]], temf_yield[["total"]]) / misc_total
+## misc_bana_frac = total_production_fun(bana_harv[["total"]], bana_yield[["total"]]) / misc_total
+## misc_plnt_frac = total_production_fun(plnt_harv[["total"]], plnt_yield[["total"]]) / misc_total
+## misc_acof_frac = total_production_fun(acof_harv[["total"]], acof_yield[["total"]]) / misc_total
+## misc_rcof_frac = total_production_fun(rcof_harv[["total"]], rcof_yield[["total"]]) / misc_total
+## misc_coco_frac = total_production_fun(coco_harv[["total"]], coco_yield[["total"]]) / misc_total
+## misc_teas_frac = total_production_fun(teas_harv[["total"]], teas_yield[["total"]]) / misc_total
+## misc_toba_frac = total_production_fun(toba_harv[["total"]], toba_yield[["total"]]) / misc_total
+## misc_vege_frac = total_production_fun(vege_harv[["total"]], vege_yield[["total"]]) / misc_total
+## misc_rest_frac = total_production_fun(rest_harv[["total"]], rest_yield[["total"]]) / misc_total
 
 ## translate GCAM scenario into demand
 time = seq(2005, 2100, by=5)
@@ -1923,7 +2054,7 @@ dmd =
                pota=gcam_demand[["Root_Tuber"]] * root_pota_frac,
                rape=gcam_demand[["OilCrop"]] * oil_rape_frac,
                rcof=gcam_demand[["MiscCrop"]] * misc_rcof_frac,
-               rest=gcam_demand[["MiscCrop"]] * misc_toba_frac,
+               rest=gcam_demand[["MiscCrop"]] * misc_rest_frac, ## is this right?
                rice=gcam_demand[["Rice"]],
                sesa=gcam_demand[["OilCrop"]] * oil_sesa_frac,
                smil=gcam_demand[["OtherGrain"]] * ocer_smil_frac,
