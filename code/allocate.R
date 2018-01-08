@@ -213,12 +213,6 @@ intensify_R = function(area_mat, tsuit_mat, yield_mat, dmd, target_intens, crop_
     area_mat
 }
 
-## cppFunction('double myfun(NumericVector x) {
-##   // LogicalVector y = x > 0;
-##   NumericVector z = x[x > 0];
-##   return z[0];
-## }')
-
 extensify = function(area_mat, tsuit_mat, yield_mat, cropland_area, dmd, target_extens, crop_ix, n_cell, n_season, n_input, cell_area, fact, no_chng_count_max=5, ...) {
 
     target_dmd = dmd[crop_ix] * target_extens
